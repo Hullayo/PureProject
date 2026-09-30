@@ -128,24 +128,23 @@
     aiTestLoading = false;
   }
 
-  let expandedPrompt = $state<'polish' | 'report' | 'breakdown' | null>(null);
+  let expandedPrompt = $state<'polish' | 'report' | null>(null);
   let promptTexts = $state<Record<string, string>>({
     polish: getPrompt('polish'),
     report: getPrompt('report'),
-    breakdown: getPrompt('breakdown'),
   });
 
-  function togglePrompt(type: 'polish' | 'report' | 'breakdown') {
+  function togglePrompt(type: 'polish' | 'report') {
     if (expandedPrompt === type) { expandedPrompt = null; return; }
     promptTexts[type] = getPrompt(type);
     expandedPrompt = type;
   }
 
-  function savePrompt(type: 'polish' | 'report' | 'breakdown') {
+  function savePrompt(type: 'polish' | 'report') {
     setPrompt(type, promptTexts[type]);
   }
 
-  function handleResetPrompt(type: 'polish' | 'report' | 'breakdown') {
+  function handleResetPrompt(type: 'polish' | 'report') {
     resetPrompt(type);
     promptTexts[type] = getDefaultPrompt(type);
   }
@@ -226,7 +225,7 @@
 
 <div class="section" style="margin-top:8px">
   <span class="section-title">{$t('settings.aiPrompts')}</span>
-  {#each (['polish', 'report', 'breakdown'] as const) as pType}
+  {#each (['polish', 'report'] as const) as pType}
     <button class="prompt-toggle" onclick={() => togglePrompt(pType)}>
       <span>{$t(`settings.prompt.${pType}`)}</span>
       <span class="prompt-arrow">{expandedPrompt === pType ? '▾' : '▸'}</span>

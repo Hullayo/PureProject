@@ -61,6 +61,7 @@
 
   function upd(field: string, val: unknown) { if ($activeProject && $activeTask) updateTask($activeProject.id, $activeTask.id, { [field]: val }); }
   function del() { if ($activeProject && $activeTask) deleteTask($activeProject.id, $activeTask.id); }
+  function saveAndClose() { activeTaskId.set(null); }
   function chooseGroup(groupId: string) {
     if (!$activeProject || !$activeTask) return;
     const target = $activeProject.task_groups.find(group => group.id === groupId);
@@ -84,7 +85,7 @@
 
     <div class="detail-body">
       <label class="label" for="task-title">{$t('detail.titleLabel')}</label>
-      <input class="input" id="task-title" value={$activeTask.title} oninput={e => upd('title', (e.target as HTMLInputElement).value)} />
+      <textarea class="input title-input" id="task-title" rows="3" value={$activeTask.title} oninput={e => upd('title', (e.target as HTMLTextAreaElement).value)}></textarea>
 
       <span class="label">任务组</span>
       <div class="move-row">
@@ -173,7 +174,8 @@
     </div>
 
     <div class="detail-footer">
-      <button class="delete-btn" onclick={del}>{$t('detail.deleteTask')}</button>
+      <button class="delete-btn" onclick={del}>{$t('detail.delete')}</button>
+      <button class="save-btn" onclick={saveAndClose}>{$t('detail.save')}</button>
     </div>
   </aside>
 {/if}
@@ -189,6 +191,7 @@
   .label { font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0; margin-bottom: -8px; }
   .input { width: 100%; padding: 8px 10px; font-size: 13px; border-radius: 2px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text); }
   .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
+  .title-input { min-height: 72px; line-height: 1.5; resize: vertical; font-family: inherit; }
   .textarea { width: 100%; padding: 9px 10px; font-size: 13px; line-height: 1.65; border-radius: 2px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text); resize: vertical; min-height: 120px; flex: 1; }
   .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
   .textarea::placeholder { color: var(--text-muted); }
@@ -196,8 +199,8 @@
   .move-row { display: flex; gap: 6px; align-items: center; }
   .move-row .input { flex: 1; }
   .move-confirm { min-height: 34px; padding: 0 9px; border: 1px solid var(--accent); color: var(--accent); font-size: 11px; white-space: nowrap; }
-  .status-row { flex-wrap: wrap; }
-  .status-btn { flex: 1; padding: 7px; font-size: 12px; border-radius: 2px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-secondary); transition: all 0.15s; }
+  .status-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .status-btn { min-width: 0; min-height: 32px; padding: 7px; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; border-radius: 2px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-secondary); transition: all 0.15s; }
   .status-btn:hover { background: var(--border); }
   .status-btn.active { background: var(--status-color, var(--accent)); border-color: var(--status-color, var(--accent)); color: #fff; }
   .priority-btn { flex: 1; padding: 7px; font-size: 12px; font-weight: 600; border-radius: 2px; border: 1px solid transparent; transition: all 0.15s; }
@@ -211,9 +214,12 @@
   .detail-color-dot.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface-raised); transform: scale(1.12); }
   .detail-color-dot:hover { transform: scale(1.15); }
   .meta { padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); line-height: 1.8; }
-  .detail-footer { padding: 13px 16px; border-top: 3px double var(--border); background: var(--surface-raised); }
-  .delete-btn { width: 100%; padding: 8px; font-size: 13px; border-radius: 2px; border: 1px solid rgba(182,59,52,0.35); background: rgba(182,59,52,0.1); color: var(--red); }
+  .detail-footer { padding: 13px 16px; border-top: 3px double var(--border); background: var(--surface-raised); display: flex; gap: 8px; }
+  .delete-btn, .save-btn { flex: 1; padding: 8px; font-size: 13px; border-radius: 2px; }
+  .delete-btn { border: 1px solid rgba(182,59,52,0.35); background: rgba(182,59,52,0.1); color: var(--red); }
   .delete-btn:hover { background: rgba(239,68,68,0.25); }
+  .save-btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-contrast); }
+  .save-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
   .ai-btn { padding: 5px 12px; font-size: 12px; border-radius: 2px; border: 1px solid var(--jade); background: var(--jade); color: var(--accent-contrast); align-self: flex-end; }
   .ai-btn:hover:not(:disabled) { opacity: 0.9; }
   .ai-btn:disabled { opacity: 0.4; cursor: not-allowed; }

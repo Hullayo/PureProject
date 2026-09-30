@@ -293,9 +293,14 @@
     align-items: center;
     justify-content: space-between;
     min-height: 78px;
-    padding: 6px 0 17px 18px;
+    padding: 6px 0 17px;
     border-bottom: 3px double var(--border-strong);
-    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .welcome-text {
+    display: flex;
+    align-items: center;
+    padding-left: 18px;
+    border-left: 3px solid var(--accent);
   }
   .welcome-title {
     font-size: 25px;
@@ -306,12 +311,12 @@
   }
   .overview-metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(66px, 1fr));
+    grid-template-columns: repeat(4, minmax(96px, 1fr));
     border: 1px solid var(--border);
     background: var(--surface-raised);
   }
   .overview-metric {
-    min-width: 66px;
+    min-width: 96px;
     padding: 7px 12px;
     border-right: 1px solid var(--border);
     text-align: center;
@@ -343,13 +348,11 @@
   }
   .action-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
-  /* 主网格：宽度自适应界面。
-     双列（左列弹性 + 右列任务列表）仅在容器足够宽时生效；
-     容器窄于 ~700px 时自动堆叠为单列，避免固定 360px 右列挤压左列卡片。 */
+  /* 主网格：项目列表占两份，到期任务占一份，中间以边框分隔。 */
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
-    gap: 26px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 0;
     flex: 1;
     min-height: 0;
     align-content: start;
@@ -362,6 +365,8 @@
     /* grid 轨道防内容撑破 */
     min-width: 0;
   }
+  .projects-col { padding-right: 24px; }
+  .tasks-col { padding-left: 24px; border-left: 1px solid var(--border-strong); }
   .col-header {
     display: flex;
     align-items: center;
@@ -406,6 +411,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap: 12px;
+    padding-top: 2px;
     overflow-y: auto;
     align-content: start;
   }
@@ -566,10 +572,14 @@
   /* 响应式 */
   @media (max-width: 768px) {
     .dashboard { padding: 14px 12px 20px; gap: 16px; }
-    .welcome-banner { min-height: 64px; padding-left: 12px; gap: 12px; }
+    .welcome-banner { min-height: 64px; gap: 12px; }
+    .welcome-text { padding-left: 12px; }
     .welcome-title { font-size: 21px; }
+    .overview-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .overview-metric { min-width: 0; padding: 6px 7px; }
     .dashboard-grid { grid-template-columns: 1fr; }
+    .projects-col { padding-right: 0; }
+    .tasks-col { padding-left: 0; border-left: 0; }
     .project-cards { grid-template-columns: 1fr; }
   }
 

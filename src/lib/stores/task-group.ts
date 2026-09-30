@@ -194,10 +194,59 @@ export function setGroupInitialStatus(projectId: string, groupId: string, status
 export function setGroupCompletionStatus(projectId: string, groupId: string, statusId: string): boolean {
   const project = get(projects).find(item => item.id === projectId);
   const group = project?.task_groups.find(item => item.id === groupId);
-  if (!group?.statuses.some(status => status.id === statusId && status.category === 'done')) return false;
+  const target = group?.statuses.find(status => status.id === statusId);
+  if (!project || !group || !target) return false;
+
+  const ordered = group.statuses.slice().sort((a, b) => a.sort_order - b.sort_order);
+  const orderedIds = [...ordered.filter(status => status.id !== statusId).map(status => status.id), statusId];
+  const nextInitialStatusId = group.initial_status_id === statusId
+    ? orderedIds.find(id => id !== statusId) ?? group.initial_status_id
+    : group.initial_status_id;
+  const alreadyNormalized = group.completion_status_id === statusId
+    && group.initial_status_id === nextInitialStatusId
+    && ordered.every((status, index) => status.id === orderedIds[index]
+      && status.sort_order === (index + 1) * 1024
+      && status.category === (status.id === statusId ? 'done' : status.category === 'done' ? 'active' : status.category));
+  if (alreadyNormalized) return false;
+
+  const changedAt = now();
+  const updatedStatuses = group.statuses.map(status => ({
+    ...status,
+    category: status.id === statusId ? 'done' as const : status.category === 'done' ? 'active' as const : status.category,
+    sort_order: (orderedIds.indexOf(status.id) + 1) * 1024,
+  }));
+  const updatedGroup = {
+    ...group,
+    initial_status_id: nextInitialStatusId,
+    completion_status_id: statusId,
+    statuses: updatedStatuses,
+  };
+
   pushHistory();
-  const changed = mutateProject(projectId, item => ({ ...item, task_groups: item.task_groups.map(candidate => candidate.id === groupId ? { ...candidate, completion_status_id: statusId } : candidate) }));
-  if (changed) runHook('onTaskGroupUpdate', { projectId, taskGroup: { ...group, completion_status_id: statusId } });
+  const changed = mutateProject(projectId, item => ({
+    ...item,
+    task_groups: item.task_groups.map(candidate => candidate.id === groupId ? updatedGroup : candidate),
+    tasks: item.tasks.map(task => {
+      if (task.task_group_id !== groupId) return task;
+      const currentStatus = group.statuses.find(status => status.id === task.status_id);
+      const nextStatus = updatedStatuses.find(status => status.id === task.status_id);
+      if (!currentStatus || !nextStatus || currentStatus.category === nextStatus.category) return task;
+      return {
+        ...task,
+        completed_at: nextStatus.category === 'done' ? (task.completed_at ?? changedAt) : null,
+        updated_at: changedAt,
+      };
+    }),
+  }));
+  if (changed) {
+    runHook('onTaskGroupUpdate', { projectId, taskGroup: updatedGroup });
+    for (const status of updatedStatuses) {
+      const previous = group.statuses.find(item => item.id === status.id);
+      if (previous && (previous.category !== status.category || previous.sort_order !== status.sort_order)) {
+        runHook('onStatusDefinitionUpdate', { projectId, taskGroupId: groupId, status });
+      }
+    }
+  }
   return changed;
 }
 

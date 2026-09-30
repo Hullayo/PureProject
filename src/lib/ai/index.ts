@@ -10,7 +10,6 @@ import {
   getPrompt,
   polishUserPrompt,
   reportUserPrompt,
-  breakdownUserPrompt,
 } from './prompts';
 
 function safeGet(key: string, fallback = ''): string {
@@ -156,20 +155,6 @@ export async function polishText(text: string): Promise<string> {
   return aiChat(getPrompt('polish'), polishUserPrompt(text));
 }
 
-/** AI 拆解任务为子任务 */
-export async function breakdownTask(task: {
-  title: string;
-  description: string;
-  status: string;
-  task_group_name?: string;
-  status_category?: string;
-  priority: string;
-  due_date: string;
-  existing_subtasks: string;
-}): Promise<string> {
-  return aiChat(getPrompt('breakdown'), breakdownUserPrompt(task));
-}
-
 /** 生成进度报告（HTML） */
 export async function generateReport(data: {
   name: string;
@@ -192,30 +177,6 @@ export async function saveReport(projectName: string, html: string): Promise<str
   const path = `${docsDir}/ProjectManager/Reports/${safeName}_report_${timestamp}.html`;
   await invoke('save_text_file', { path, content: html });
   return path;
-}
-
-/** 解析 AI 拆解结果 */
-export function parseBreakdownResult(text: string): Array<{
-  title: string;
-  estimate: string;
-  dependsOn: number[];
-}> {
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  const result: Array<{ title: string; estimate: string; dependsOn: number[] }> = [];
-
-  for (const line of lines) {
-    const match = line.match(/^\d+\.\s*(.+?)\s*\|\s*预估:\s*(.+?)\s*\|\s*依赖:\s*(.+)$/);
-    if (!match) continue;
-
-    const title = match[1].trim();
-    const estimate = match[2].trim();
-    const depStr = match[3].trim();
-    const dependsOn = depStr === '无' ? [] : depStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-
-    result.push({ title, estimate, dependsOn });
-  }
-
-  return result;
 }
 
 // 导出 OpenAI 类型，方便外部使用

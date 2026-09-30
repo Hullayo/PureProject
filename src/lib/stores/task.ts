@@ -100,6 +100,59 @@ export function createTask(
 }
 
 /**
+ * 复制任务组内某个状态下的全部任务。
+ *
+ * 新副本保留任务内容和排期，重建任务、子任务及评论 ID，并清空正在计时状态。
+ * 同一批任务之间的依赖会自动指向对应副本；批次外依赖仍指向原任务。
+ */
+export function duplicateTasksInStatus(projectId: string, taskGroupId: string, statusId: string): number {
+  const project = get(projects).find(item => item.id === projectId);
+  const group = project?.task_groups.find(item => item.id === taskGroupId);
+  const status = group?.statuses.find(item => item.id === statusId);
+  if (!project || !group || !status) return 0;
+
+  const sourceTasks = project.tasks.filter(task => task.task_group_id === taskGroupId && task.status_id === statusId);
+  if (sourceTasks.length === 0) return 0;
+
+  const createdAt = now();
+  const idMap = new Map(sourceTasks.map(task => [task.id, genId()]));
+  const copies: Task[] = sourceTasks.map(task => ({
+    ...task,
+    id: idMap.get(task.id)!,
+    tags: [...task.tags],
+    dependencies: task.dependencies.map(dependency => ({
+      ...dependency,
+      taskId: idMap.get(dependency.taskId) ?? dependency.taskId,
+    })),
+    subtasks: task.subtasks.map(subtask => ({ ...subtask, id: genId() })),
+    comments: task.comments.map(comment => ({ ...comment, id: genId() })),
+    recurrence: task.recurrence
+      ? {
+          ...task.recurrence,
+          byWeekday: task.recurrence.byWeekday ? [...task.recurrence.byWeekday] : undefined,
+          sourceTaskId: task.recurrence.sourceTaskId
+            ? (idMap.get(task.recurrence.sourceTaskId) ?? task.recurrence.sourceTaskId)
+            : undefined,
+        }
+      : task.recurrence,
+    completed_at: status.category === 'done' ? createdAt : null,
+    tracked_start: null,
+    created_at: createdAt,
+    updated_at: createdAt,
+  }));
+
+  pushHistory();
+  projects.update(list => list.map(item => {
+    if (item.id !== projectId) return item;
+    const updated = { ...item, tasks: [...item.tasks, ...copies], updated_at: createdAt };
+    persistProject(updated);
+    return updated;
+  }));
+  for (const task of copies) runHook('onTaskCreate', { projectId, taskGroupId, task });
+  return copies.length;
+}
+
+/**
  * 更新任务属性
  *
  * @param projectId - 项目 ID

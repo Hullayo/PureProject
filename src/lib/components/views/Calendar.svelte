@@ -164,7 +164,6 @@
     <div class="calendar-header">
       <span class="dot" style="background:{$activeProject.color}"></span>
       <h2>{$activeProject.name}</h2>
-      <span class="meta">{$t('calendar.viewTitle')}</span>
       <select class="group-filter" aria-label="任务组筛选" bind:value={$taskGroupFilter}><option value="all">全部任务组</option>{#each groups as group}<option value={group.id}>{group.name}</option>{/each}</select>
       {#if taskLines.length > 0}
         <span class="header-range">{taskLines.length} 个任务有时间线</span>
@@ -184,17 +183,6 @@
     <div class="calendar-body">
       <!-- 左侧：日历网格 -->
       <div class="calendar-left">
-        {#if taskLines.length > 0}
-          <div class="legend">
-            {#each taskLines as l}
-              <span class="legend-item" title="{l.start} → {l.end}">
-                <span class="legend-line" style="background:{l.color}"></span>
-                {l.title}
-              </span>
-            {/each}
-          </div>
-        {/if}
-
         <div class="calendar-grid">
           {#each weekDays as wd}
             <div class="weekday">{wd}</div>
@@ -322,7 +310,6 @@
   .calendar-header { display: flex; align-items: center; gap: 10px; padding: 16px 24px; border-bottom: 1px solid var(--border); }
   .calendar-header .dot { width: 12px; height: 12px; border-radius: 50%; }
   .calendar-header h2 { font-size: 16px; font-weight: 600; }
-  .calendar-header .meta { font-size: 12px; color: var(--text-muted); }
   .group-filter { margin-left: auto; max-width: 180px; min-height: 30px; padding: 4px 7px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text); font-size: 11px; }
   .header-range { font-size: 11px; color: var(--text-muted); padding: 2px 8px; background: var(--surface); border-radius: 4px; }
   .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px; }
@@ -340,11 +327,6 @@
   .calendar-body { flex: 1; display: flex; overflow: hidden; }
 
   .calendar-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-
-  /* ── 图例 ── */
-  .legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 24px; border-bottom: 1px solid var(--border); background: var(--surface); max-height: 48px; overflow-y: auto; flex-shrink: 0; }
-  .legend-item { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
-  .legend-line { width: 12px; height: 3px; border-radius: 2px; flex-shrink: 0; }
 
   /* ── 日历网格 ── */
   .calendar-grid { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: 28px repeat(6, 1fr); overflow: auto; padding: 0 24px 16px; }

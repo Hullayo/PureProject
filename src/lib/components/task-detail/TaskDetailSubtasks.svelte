@@ -4,38 +4,12 @@
   import { t } from '$lib/i18n';
   import { animationLevel } from '$lib/stores/animation';
   import { fade } from 'svelte/transition';
-  import { breakdownTask, parseBreakdownResult } from '$lib/ai';
-  import { getTaskStatus } from '$lib/utils/task-status';
 
   let newSubtask = $state('');
-  let aiBreaking = $state(false);
   function handleAddSubtask() {
     if (!$activeProject || !$activeTask || !newSubtask.trim()) return;
     addSubtask($activeProject.id, $activeTask.id, newSubtask.trim());
     newSubtask = '';
-  }
-
-  async function handleAiBreakdown() {
-    if (!$activeProject || !$activeTask) return;
-    aiBreaking = true;
-    try {
-      const existing = $activeTask.subtasks?.map(s => s.title).join(', ') || $t('common.none');
-      const result = await breakdownTask({
-        title: $activeTask.title,
-        description: $activeTask.description || '',
-        status: getTaskStatus($activeProject, $activeTask)?.name ?? '',
-        task_group_name: $activeProject.task_groups.find(group => group.id === $activeTask!.task_group_id)?.name ?? '',
-        status_category: getTaskStatus($activeProject, $activeTask)?.category ?? 'todo',
-        priority: $activeTask.priority,
-        due_date: $activeTask.due_date || '',
-        existing_subtasks: existing,
-      });
-      const items = parseBreakdownResult(result);
-      for (const item of items) {
-        addSubtask($activeProject.id, $activeTask.id, item.title);
-      }
-    } catch (e: any) { alert(e?.message ?? String(e)); }
-    aiBreaking = false;
   }
 
 </script>
@@ -63,9 +37,6 @@
   <div class="sub-add">
     <input class="sub-input" placeholder={$t('detail.subtaskPlaceholder')} bind:value={newSubtask} onkeydown={e => e.key === 'Enter' && handleAddSubtask()} />
     <button class="sub-add-btn" onclick={handleAddSubtask}>+</button>
-    <button class="ai-btn small" onclick={handleAiBreakdown} disabled={aiBreaking}>
-      {aiBreaking ? $t('detail.aiBreaking') : $t('detail.aiBreakdown')}
-    </button>
   </div>
 {/if}
 
@@ -89,8 +60,4 @@
   .sub-input:focus { border-color: var(--accent); }
   .sub-input::placeholder { color: var(--text-muted); }
   .sub-add-btn { padding: 5px 10px; font-size: 12px; border-radius: 6px; background: var(--accent); color: #fff; }
-  .ai-btn { padding: 5px 12px; font-size: 12px; border-radius: 2px; border: 1px solid var(--jade); background: var(--jade); color: var(--accent-contrast); align-self: flex-end; }
-  .ai-btn:hover:not(:disabled) { opacity: 0.9; }
-  .ai-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .ai-btn.small { align-self: auto; padding: 5px 10px; }
 </style>

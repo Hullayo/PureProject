@@ -34,11 +34,6 @@ export const en = {
   'taskGroup.archive': 'Archive',
   'taskGroup.restore': 'Restore',
   'taskGroup.keepOne': 'Keep at least one active task group',
-  'taskGroup.deleteEmpty': 'Delete empty group',
-  'taskGroup.deleteConfirm': 'Click again to confirm',
-  'taskGroup.deleteBlockedTasks': 'Move this group\'s {n} tasks first',
-  'taskGroup.moveUp': 'Move task group up',
-  'taskGroup.moveDown': 'Move task group down',
   'taskGroup.select': 'Select task group',
   'taskGroup.close': 'Close task group panel',
   'taskGroup.emptyTitle': 'No active task groups',
@@ -71,6 +66,14 @@ export const en = {
   'statusManager.migrateTo': 'Migrate to',
   'statusManager.migrateDelete': 'Migrate and delete',
   'statusManager.confirmDelete': 'Confirm delete',
+  'statusManager.new': 'Add status',
+  'statusManager.confirmAdd': 'Confirm',
+  'statusManager.actions': 'Status actions',
+  'statusManager.copyTasks': 'Duplicate status tasks',
+  'statusManager.copyTasksSuccess': 'Duplicated {n} tasks',
+  'statusManager.copyTasksEmpty': 'There are no tasks to duplicate in this status',
+  'statusManager.setCompletion': 'Set as completion column',
+  'statusManager.currentCompletion': 'Current completion column',
 
   // ─── Priority ─────────────────────────────────────────────────────────────
   'priority.high': 'High',
@@ -188,7 +191,6 @@ export const en = {
   'detail.dayOffset': '+{n}d',
   'detail.created': 'Created:',
   'detail.updated': 'Updated:',
-  'detail.deleteTask': 'Delete Task',
   'detail.comments': 'Comments',
   'detail.addComment': 'Add a comment...',
   'detail.noComments': 'No comments yet',
@@ -204,7 +206,6 @@ export const en = {
   'kanban.selectProject': 'Please select a project first',
 
   // ─── Calendar ─────────────────────────────────────────────────────────────
-  'calendar.viewTitle': 'Calendar View',
   'calendar.today': 'Today',
   'calendar.more': '+{n} more',
   'calendar.selectProject': 'Please select a project first',
@@ -547,15 +548,12 @@ export const en = {
   'settings.aiPrompts': 'Prompt Templates',
   'settings.prompt.polish': 'Text Polish Prompt',
   'settings.prompt.report': 'Progress Report Prompt',
-  'settings.prompt.breakdown': 'Task Breakdown Prompt',
   'settings.promptSave': 'Save',
   'settings.promptReset': 'Reset to Default',
 
   // ─── AI ────────────────────────────────────────────────────────────────────
   'detail.aiPolish': 'AI Polish',
-  'detail.aiBreakdown': 'AI Breakdown',
   'detail.aiPolishing': 'Polishing...',
-  'detail.aiBreaking': 'Breaking down...',
   'ai.reportGenerating': 'Generating...',
   'ai.reportSaved': 'Report saved',
   'ai.reportFailed': 'Generation failed',

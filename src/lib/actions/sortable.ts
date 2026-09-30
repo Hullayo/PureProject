@@ -56,8 +56,12 @@ export interface SortableParams {
   handle?: string;
   /** 触摸端是否强制从手柄起拖（默认 true） */
   handleOnly?: boolean;
-  /** `'y'` = 竖向列表（兄弟节点让位）；`'free'` = 看板自由布局（由使用方画指示线） */
-  axis?: 'y' | 'free';
+  /** 可拖元素选择器（默认 `[data-sortable-item]`） */
+  itemSelector?: string;
+  /** 放置区域选择器（默认 `[data-sortable-zone]`；传 null 禁用分区） */
+  zoneSelector?: string | null;
+  /** `'x'` / `'y'` = 单轴列表（兄弟节点让位）；`'free'` = 看板自由布局（由使用方画指示线） */
+  axis?: 'x' | 'y' | 'free';
   /** 触摸长按进入拖拽的毫秒数（默认 220） */
   longPressMs?: number;
   /** 是否自动滚动最近的滚动容器（默认 true） */
@@ -77,7 +81,9 @@ interface ItemRect {
   zone: string | null;
   el: HTMLElement;
   top: number;
+  left: number;
   height: number;
+  width: number;
   index: number;
 }
 
@@ -125,23 +131,35 @@ export function sortable(node: HTMLElement, params: SortableParams) {
   let current: DropTarget | null = null;
   let lastScrollTop = 0;
   let lastScrollLeft = 0;
+  let itemGap = 0;
   let touchDrag = false;
 
   // ── 工具 ───────────────────────────────────────────────────────────────────
+  function itemSelector(): string {
+    return p.itemSelector ?? ITEM_SELECTOR;
+  }
+
+  function zoneSelector(): string | null {
+    return p.zoneSelector === undefined ? ZONE_SELECTOR : p.zoneSelector;
+  }
+
   function items(): HTMLElement[] {
-    return Array.from(node.querySelectorAll<HTMLElement>(ITEM_SELECTOR));
+    return Array.from(node.querySelectorAll<HTMLElement>(itemSelector()));
   }
 
   function collect(): ItemRect[] {
     return items().map((el, index) => {
       const r = el.getBoundingClientRect();
-      const zoneEl = el.closest<HTMLElement>(ZONE_SELECTOR);
+      const selector = zoneSelector();
+      const zoneEl = selector ? el.closest<HTMLElement>(selector) : null;
       return {
         id: el.dataset.sortableId ?? String(index),
         zone: zoneEl?.dataset.sortableZone ?? null,
         el,
         top: r.top,
+        left: r.left,
         height: r.height,
+        width: r.width,
         index,
       };
     });
@@ -149,26 +167,35 @@ export function sortable(node: HTMLElement, params: SortableParams) {
 
   function computeTarget(x: number, y: number): DropTarget {
     const under = document.elementFromPoint(x, y);
-    const zoneEl = under instanceof Element ? under.closest<HTMLElement>(ZONE_SELECTOR) : null;
+    const selector = zoneSelector();
+    const zoneEl = selector && under instanceof Element ? under.closest<HTMLElement>(selector) : null;
     const zone = zoneEl?.dataset.sortableZone ?? null;
 
     let index = 0;
     for (const r of rects) {
       if (r.id === dragId || r.zone !== zone) continue;
-      if (y > r.top + r.height / 2) index++;
+      const passedMidpoint = p.axis === 'x'
+        ? x > r.left + r.width / 2
+        : y > r.top + r.height / 2;
+      if (passedMidpoint) index++;
     }
     return { zone, index };
   }
 
-  /** 竖向列表：兄弟节点让位，露出空槽 */
+  /** 单轴列表：兄弟节点让位，露出空槽 */
   function paint(t: DropTarget) {
     if (p.axis === 'free') return;
+    const dragged = rects[fromIndex];
+    if (!dragged) return;
+    const distance = (p.axis === 'x' ? dragged.width : dragged.height) + itemGap;
     for (const r of rects) {
       if (r.id === dragId) continue;
       let shift = 0;
-      if (r.index > fromIndex && r.index <= t.index) shift = -r.height;
-      else if (r.index < fromIndex && r.index >= t.index) shift = r.height;
-      r.el.style.transform = shift ? `translateY(${shift}px)` : '';
+      if (r.index > fromIndex && r.index <= t.index) shift = -distance;
+      else if (r.index < fromIndex && r.index >= t.index) shift = distance;
+      r.el.style.transform = shift
+        ? p.axis === 'x' ? `translateX(${shift}px)` : `translateY(${shift}px)`
+        : '';
     }
   }
 
@@ -215,7 +242,12 @@ export function sortable(node: HTMLElement, params: SortableParams) {
       for (const r of rects) r.top -= d;
       lastScrollTop = top;
     }
-    lastScrollLeft = scrollers.reduce((a, sc) => a + sc.scrollLeft, 0);
+    const left = scrollers.reduce((a, sc) => a + sc.scrollLeft, 0);
+    if (left !== lastScrollLeft) {
+      const d = left - lastScrollLeft;
+      for (const r of rects) r.left -= d;
+      lastScrollLeft = left;
+    }
 
     const t = computeTarget(lastX, lastY);
     if (!current || current.index !== t.index || current.zone !== t.zone) {
@@ -237,6 +269,8 @@ export function sortable(node: HTMLElement, params: SortableParams) {
 
     rects = collect();
     fromIndex = rects.findIndex(r => r.id === dragId);
+    const nodeStyle = getComputedStyle(node);
+    itemGap = Number.parseFloat(p.axis === 'x' ? nodeStyle.columnGap : nodeStyle.rowGap) || 0;
     scrollers = collectScrollers(node);
     lastScrollTop = scrollers.reduce((a, sc) => a + sc.scrollTop, 0);
     lastScrollLeft = scrollers.reduce((a, sc) => a + sc.scrollLeft, 0);
@@ -323,6 +357,7 @@ export function sortable(node: HTMLElement, params: SortableParams) {
     fromIndex = -1;
     current = null;
     rects = [];
+    itemGap = 0;
   }
 
   // ── 指针事件 ───────────────────────────────────────────────────────────────
@@ -331,13 +366,14 @@ export function sortable(node: HTMLElement, params: SortableParams) {
     // 已有活跃手势（多指、或在拖拽中又按下）：直接忽略，避免 ghost / rAF 泄漏
     if (started || dragEl || pressTimer !== null) return;
     const target = e.target as HTMLElement | null;
-    const item = target?.closest<HTMLElement>(ITEM_SELECTOR);
+    const item = target?.closest<HTMLElement>(itemSelector());
     if (!item || !node.contains(item)) return;
 
     const isTouch = e.pointerType === 'touch';
     const onHandle = p.handle ? !!target?.closest(p.handle) : false;
-    // 触摸端默认必须按住手柄（手柄在 CSS 里带 touch-action:none，不劫持页面滚动）
-    if (isTouch && (p.handleOnly ?? true) && p.handle && !onHandle) return;
+    // 触摸端默认必须按住手柄；桌面端可显式要求只能从手柄起拖。
+    const requiresHandle = !!p.handle && (isTouch ? (p.handleOnly ?? true) : p.handleOnly === true);
+    if (requiresHandle && !onHandle) return;
 
     dragEl = item;
     dragId = item.dataset.sortableId ?? '';

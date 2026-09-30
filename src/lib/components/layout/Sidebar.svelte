@@ -315,7 +315,7 @@
           </svg>
         </span>
         <span class="dot" style="background:{project.color}"></span>
-        <span class="project-name">{project.name}</span>
+        <span class="project-name" title={project.name}>{project.name}</span>
         {#if ownerBadgeName(project)}
           <span class="owner-badge" title={$t('storage.ownerBadgeHint')} aria-label={$tf('storage.ownerBadge', { name: ownerBadgeName(project) ?? '' })}>🔒</span>
         {/if}
@@ -536,7 +536,7 @@
   .modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
   .modal-footer .btn { min-width: 90px; }
   .project-list { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 10px; }
-  .project-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 8px 11px; border-radius: 2px; font-size: 13px; color: var(--text); border: 1px solid transparent; transition: background 0.15s, border-color 0.15s, color 0.15s; text-align: left; cursor: pointer; }
+  .project-item { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 8px 11px; border-radius: 2px; font-size: 13px; color: var(--text); border: 1px solid transparent; transition: background 0.15s, border-color 0.15s, color 0.15s; text-align: left; cursor: pointer; }
   .project-item:hover { background: var(--surface); }
   .project-item.active { background: var(--surface-raised); color: var(--accent); border-color: var(--border); box-shadow: inset 3px 0 0 var(--accent); }
   .project-empty { padding: 12px; font-size: 12px; color: var(--text-muted); text-align: center; }
@@ -544,12 +544,12 @@
   .project-item:hover .drag-handle { opacity: 0.7; }
   .drag-handle:active { cursor: grabbing; }
   .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface-raised); }
-  .project-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .project-name { flex: 1; max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
   .owner-badge { flex-shrink: 0; font-size: 11px; line-height: 1; opacity: 0.75; cursor: help; }
-  .project-settings { width: 23px; height: 23px; flex: 0 0 23px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); opacity: 0; }
+  .project-settings { position: absolute; right: 35px; width: 23px; height: 23px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); opacity: 0; }
   .project-item:hover .project-settings, .project-settings:focus-visible { opacity: 1; }
   .project-settings:hover { color: var(--accent); background: var(--accent-light); }
-  .delete-btn { min-width: 23px; height: 23px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; }
+  .delete-btn { position: absolute; right: 8px; min-width: 23px; height: 23px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; }
   .project-item:hover .delete-btn, .delete-btn:focus-visible, .delete-btn.confirm { opacity: 1; }
   .delete-btn:hover { color: var(--red); }
   .delete-btn.confirm { color: var(--red); background: rgba(182,59,52,0.1); }
@@ -564,7 +564,7 @@
   .export-item:hover { background: var(--surface); color: var(--accent); }
   .export-sep { height: 1px; margin: 4px 0; background: var(--border); }
   .project-search { display: flex; align-items: center; gap: 7px; margin: 8px 12px 6px; padding: 0 8px; color: var(--text-muted); background: var(--surface-raised); border: 1px solid var(--border); border-radius: 4px; }
-  .project-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+  .project-search:focus-within { border-color: var(--border); box-shadow: none; }
   .search-input { flex: 1; min-width: 0; padding: 7px 0; font-size: 12px; background: transparent; border: 0; color: var(--text); box-sizing: border-box; }
   .search-input:focus { outline: none; }
   .search-input::placeholder { color: var(--text-muted); }

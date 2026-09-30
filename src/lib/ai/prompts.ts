@@ -62,54 +62,11 @@ HTML 技术要求：
 
 只输出完整的 HTML 代码，不要添加任何解释或 markdown 代码块标记。`;
 
-export const BREAKDOWN_SYSTEM_DEFAULT = `你是一个资深的项目管理助手，专门为技术团队提供任务拆解服务。
-
-你的核心职责：
-根据用户提供的任务信息，将其拆解为 3-7 个可执行的子任务，并分析子任务之间的依赖关系。
-
-输出格式要求：
-严格按照以下格式输出，每个子任务一行：
-
-1. [子任务标题] | 预估: X天 | 依赖: 无
-2. [子任务标题] | 预估: X天 | 依赖: 1
-3. [子任务标题] | 预估: X天 | 依赖: 1,2
-
-子任务设计原则：
-- 每个子任务应该是独立可执行的、可验证的
-- 子任务的粒度适中：太粗则失去拆解意义，太细则过于碎片化
-- 子任务标题简洁明了，不超过 20 个字
-- 按照合理的执行顺序排列（前置任务排在前面）
-- 预估工时基于一般开发者的经验，以天为单位（0.5天为最小单位）
-
-依赖关系设计原则：
-- 分析哪些子任务必须在其他子任务完成后才能开始
-- 没有前置依赖的子任务标注"依赖: 无"
-- 有依赖的子任务标注依赖的序号（如"依赖: 1,2"表示需要第1和第2个子任务完成后才能开始）
-- 依赖关系应该反映真实的执行逻辑，不要设置不必要的依赖
-- 尽量让没有依赖关系的子任务可以并行执行
-
-常见拆解模式：
-- 功能开发类：需求分析 → 设计 → 实现 → 测试 → 部署
-- 问题修复类：定位原因 → 制定方案 → 实施修复 → 验证测试
-- 重构类：分析现状 → 制定计划 → 逐步重构 → 回归测试
-- 文档类：收集素材 → 撰写初稿 → 审核修改 → 发布
-
-语言要求：
-- 中文输出
-- 只输出编号列表，不要添加额外的解释、引言或总结
-- 不要输出"以下是拆解结果"等引言
-
-禁止事项：
-- 不要输出超过 7 个子任务
-- 不要输出与任务无关的内容
-- 不要添加 markdown 格式（如加粗、代码块等），纯文本即可`;
-
 // ─── localStorage 读写 ─────────────────────────────────────────────────────
 
 const PROMPT_KEYS = {
   polish: 'pm_prompt_polish',
   report: 'pm_prompt_report',
-  breakdown: 'pm_prompt_breakdown',
 } as const;
 
 function safeGet(key: string): string | null { try { return localStorage.getItem(key); } catch { return null; } }
@@ -117,23 +74,22 @@ function safeSet(key: string, val: string): void { try { localStorage.setItem(ke
 function safeRemove(key: string): void { try { localStorage.removeItem(key); } catch {} }
 
 /** 获取当前生效的 prompt（优先用户自定义，否则用默认） */
-export function getPrompt(type: 'polish' | 'report' | 'breakdown'): string {
+export function getPrompt(type: 'polish' | 'report'): string {
   return safeGet(PROMPT_KEYS[type]) || getDefaultPrompt(type);
 }
 
-export function getDefaultPrompt(type: 'polish' | 'report' | 'breakdown'): string {
+export function getDefaultPrompt(type: 'polish' | 'report'): string {
   switch (type) {
     case 'polish': return POLISH_SYSTEM_DEFAULT;
     case 'report': return REPORT_SYSTEM_DEFAULT;
-    case 'breakdown': return BREAKDOWN_SYSTEM_DEFAULT;
   }
 }
 
-export function setPrompt(type: 'polish' | 'report' | 'breakdown', value: string): void {
+export function setPrompt(type: 'polish' | 'report', value: string): void {
   safeSet(PROMPT_KEYS[type], value);
 }
 
-export function resetPrompt(type: 'polish' | 'report' | 'breakdown'): void {
+export function resetPrompt(type: 'polish' | 'report'): void {
   safeRemove(PROMPT_KEYS[type]);
 }
 
@@ -141,7 +97,6 @@ export function resetPrompt(type: 'polish' | 'report' | 'breakdown'): void {
 
 export const POLISH_SYSTEM = POLISH_SYSTEM_DEFAULT;
 export const REPORT_SYSTEM = REPORT_SYSTEM_DEFAULT;
-export const BREAKDOWN_SYSTEM = BREAKDOWN_SYSTEM_DEFAULT;
 
 // ─── User Prompt 函数 ──────────────────────────────────────────────────────
 
@@ -173,27 +128,4 @@ ${data.tasks}
 
 里程碑：
 ${data.milestones}`;
-}
-
-export function breakdownUserPrompt(task: {
-  title: string;
-  description: string;
-  status: string;
-  task_group_name?: string;
-  status_category?: string;
-  priority: string;
-  due_date: string;
-  existing_subtasks: string;
-}): string {
-  return `请将以下任务拆解为子任务并标注依赖关系：
-
-任务标题：${task.title}
-任务描述：${task.description || '（无描述）'}
-任务组：${task.task_group_name || '（未指定）'}
-当前状态：${task.status}（${task.status_category || 'todo'}）
-优先级：${task.priority}
-截止日期：${task.due_date || '（未设置）'}
-已有子任务：${task.existing_subtasks || '无'}
-
-请拆解为子任务并标注依赖关系。`;
 }

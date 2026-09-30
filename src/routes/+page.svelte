@@ -32,9 +32,9 @@
   import Kanban from '$lib/components/views/Kanban.svelte';
   import Calendar from '$lib/components/views/Calendar.svelte';
   import ShortcutHelp from '$lib/components/shared/ShortcutHelp.svelte';
-  import Icon from '$lib/components/shared/Icon.svelte';  import CommandPalette from '$lib/components/shared/CommandPalette.svelte';
+  import CommandPalette from '$lib/components/shared/CommandPalette.svelte';
   import GlobalSearch from '$lib/components/shared/GlobalSearch.svelte';
-  import { activeProject, activeProjectId, activeTask, activeTaskId, undo, redo, showSettings, showFlowchart, exportHtmlFile } from '$lib/stores';
+  import { activeProject, activeProjectId, activeTask, activeTaskId, undo, redo, showSettings, showFlowchart } from '$lib/stores';
   import { openSearch, searchOpen, closeSearch } from '$lib/stores/search';
   import { t, locale } from '$lib/i18n';
   import { animationLevel } from '$lib/stores/animation';
@@ -165,11 +165,6 @@
           <button class="toggle-btn" class:active={view === v} onclick={() => view = v}>{$t(`view.${v}`)}</button>
         {/each}
       </div>
-      <button
-        class="report-export-btn"
-        onclick={() => $activeProjectId && exportHtmlFile($activeProjectId)}
-        title={$t('export.report')}
-      ><Icon name="chart" size={13} /> {$t('export.report')}</button>
     </div>
     <div class="view-container">
       {#key view}
@@ -256,8 +251,6 @@
   .view-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .view-bar { display: flex; align-items: center; min-height: 47px; border-bottom: 3px double var(--border); background: var(--surface-raised); }
   .view-toggle { flex: 1; align-self: stretch; min-width: 0; display: flex; align-items: stretch; gap: 0; padding: 0 22px; overflow-x: auto; white-space: nowrap; position: relative; -webkit-overflow-scrolling: touch; }
-  .report-export-btn { flex-shrink: 0; margin: 0 16px 0 8px; padding: 6px 12px; font-size: 12px; border-radius: 2px; background: var(--accent); color: var(--accent-contrast); border: 1px solid var(--accent); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
-  .report-export-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
   .view-toggle::-webkit-scrollbar { display: none; }
   .toggle-indicator { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); transition: left 0.08s ease-out, width 0.06s ease; z-index: 0; pointer-events: none; }
   .toggle-btn { min-height: 44px; padding: 0 13px; font-family: var(--font-serif); font-size: 13px; font-weight: 600; border-radius: 0; color: var(--text-secondary); transition: color 0.15s, background 0.15s; flex-shrink: 0; position: relative; z-index: 1; }
@@ -266,7 +259,6 @@
 
   @media (max-width: 768px) {
     .view-toggle { padding: 0 12px; }
-    .report-export-btn { margin: 0 8px 0 4px; padding: 5px 9px; font-size: 11px; }
     .toggle-btn { min-height: 42px; padding: 0 10px; font-size: 12px; }
     .main-area { overflow: visible; flex: none; }
     .view-container { overflow: visible; flex: none; }

@@ -34,11 +34,6 @@ export const zh = {
   'taskGroup.archive': '归档',
   'taskGroup.restore': '恢复归档',
   'taskGroup.keepOne': '至少保留一个未归档任务组',
-  'taskGroup.deleteEmpty': '删除空组',
-  'taskGroup.deleteConfirm': '再次点击确认删除',
-  'taskGroup.deleteBlockedTasks': '需先迁移该组的 {n} 个任务',
-  'taskGroup.moveUp': '上移任务组',
-  'taskGroup.moveDown': '下移任务组',
   'taskGroup.select': '选择任务组',
   'taskGroup.close': '关闭任务组面板',
   'taskGroup.emptyTitle': '还没有可用任务组',
@@ -71,6 +66,14 @@ export const zh = {
   'statusManager.migrateTo': '迁移到',
   'statusManager.migrateDelete': '迁移并删除',
   'statusManager.confirmDelete': '确认删除',
+  'statusManager.new': '新增状态',
+  'statusManager.confirmAdd': '确定',
+  'statusManager.actions': '状态操作',
+  'statusManager.copyTasks': '复制状态任务',
+  'statusManager.copyTasksSuccess': '已复制 {n} 个任务',
+  'statusManager.copyTasksEmpty': '当前状态没有可复制的任务',
+  'statusManager.setCompletion': '设为完成列',
+  'statusManager.currentCompletion': '当前完成列',
 
   // ─── 优先级 ───────────────────────────────────────────────────────────────
   'priority.high': '高',
@@ -188,7 +191,6 @@ export const zh = {
   'detail.dayOffset': '+{n}天',
   'detail.created': '创建:',
   'detail.updated': '更新:',
-  'detail.deleteTask': '删除任务',
   'detail.comments': '评论',
   'detail.addComment': '添加评论...',
   'detail.noComments': '暂无评论',
@@ -204,7 +206,6 @@ export const zh = {
   'kanban.selectProject': '请先选择一个项目',
 
   // ─── 日历 ─────────────────────────────────────────────────────────────────
-  'calendar.viewTitle': '日历视图',
   'calendar.today': '今天',
   'calendar.more': '+{n} 更多',
   'calendar.selectProject': '请先选择一个项目',
@@ -547,15 +548,12 @@ export const zh = {
   'settings.aiPrompts': 'Prompt 模板',
   'settings.prompt.polish': '文本润色 Prompt',
   'settings.prompt.report': '进度汇报 Prompt',
-  'settings.prompt.breakdown': '任务拆解 Prompt',
   'settings.promptSave': '保存',
   'settings.promptReset': '恢复默认',
 
   // ─── AI ────────────────────────────────────────────────────────────────────
   'detail.aiPolish': 'AI 润色',
-  'detail.aiBreakdown': 'AI 拆解',
   'detail.aiPolishing': '润色中...',
-  'detail.aiBreaking': '拆解中...',
   'ai.reportGenerating': '生成中...',
   'ai.reportSaved': '汇报已保存',
   'ai.reportFailed': '生成失败',
