@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+# Windows launcher files keep their native line endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets must never be line-ending normalized.
+*.gif binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.exe binary
+*.apk binary
+

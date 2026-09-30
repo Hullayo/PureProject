@@ -148,6 +148,19 @@ pnpm build
 
 `pnpm test` 覆盖版本号、v1-v4 数据迁移、引用完整性、同步 schema 防降级、循环任务、排序、插件 API、工时和 Rust 原子写。
 
+## 版本管理
+
+项目使用 Git 保存可比较、可回退的修改历史。完成一个可描述的小步骤后运行：
+
+```bash
+pnpm git:status
+pnpm verify
+.\save-version.cmd "feat: 简要说明本次修改"
+git push
+```
+
+`save-version.cmd` 创建本地提交但不会自动上传；也可使用 `pnpm git:save -- "feat: 修改说明"`。远程备份、功能分支、发布标签和安全回退方式见 [Git 版本管理工作流](docs/GIT-WORKFLOW.md)。
+
 发版前运行：
 
 ```bash
