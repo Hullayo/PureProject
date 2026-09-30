@@ -1,6 +1,6 @@
 # 数据格式与存储约定
 
-> 适用版本：ProjectManager V1.2 / `.pm schema_version = 4`
+> 适用版本：PureProject V1.2 / `.pm schema_version = 4`
 
 本文档定义四级任务模型、内部存储、`.pm` 交换格式、迁移校验和同步版本保护。相关实现位于 `src/lib/types/*`、`src/lib/utils/pm-schema.ts`、`src/lib/repositories/*`、`src/lib/sync/*` 与 `server/pm-sync-server.mjs`。
 
@@ -242,7 +242,7 @@ v3 到 v4 的迁移规则：
 
 ```json
 {
-  "kind": "projectmanager-backup",
+  "kind": "pureproject-backup",
   "schema_version": 4,
   "app_version": "1.2.0",
   "exported_at": "2026-09-30T10:00:00.000Z",

@@ -272,7 +272,7 @@ if (apk) {
 }
 
 // ─── 汇总 ───────────────────────────────────────────────────────────────────
-console.log(`\n📦 ProjectManager 更新发布 — v${VERSION}`);
+console.log(`\n📦 PureProject 更新发布 — v${VERSION}`);
 console.log(`   输出目录 : ${OUT_DIR}`);
 console.log(`   服务器   : ${BASE_URL}\n`);
 

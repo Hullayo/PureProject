@@ -6,17 +6,17 @@
  * GitHub Release 资源地址：`https://github.com/<repo>/releases/latest/download/<asset>`。
  *
  * 上传资源：
- *   - ProjectManager_<ver>_x64-setup.exe / .exe.sig   （Windows NSIS + 更新签名）
- *   - ProjectManager-android-arm64-v<ver>.apk        （Android）
+ *   - PureProject_<ver>_x64-setup.exe / .exe.sig   （Windows NSIS + 更新签名）
+ *   - PureProject-android-arm64-v<ver>.apk          （Android）
  *   - latest.json / android.json                      （清单，客户端实际请求的文件）
  *
  * 用法：
  *   GITHUB_TOKEN=ghp_xxx node scripts/publish-github.mjs \
- *     [--repo AlicDanclic/ProjectManager] [--tag v<version>] [--notes "…"] [--apk <path>]
+ *     [--repo Hullayo/PureProject] [--tag v<version>] [--notes "…"] [--apk <path>]
  *
  * 环境变量：
  *   GITHUB_TOKEN / GH_TOKEN   必填（需 repo 权限）
- *   GITHUB_REPO               默认 AlicDanclic/ProjectManager
+ *   GITHUB_REPO               默认 Hullayo/PureProject
  *   UPDATE_NOTES              更新说明
  */
 
@@ -43,7 +43,7 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 const VERSION = JSON.parse(fs.readFileSync(CONF_PATH, 'utf8')).version;
 const TAG = String(args.tag || `v${VERSION}`);
-const REPO = String(args.repo || process.env.GITHUB_REPO || 'AlicDanclic/ProjectManager').replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+const REPO = String(args.repo || process.env.GITHUB_REPO || 'Hullayo/PureProject').replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
 const TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
 const NOTES = String(args.notes || process.env.UPDATE_NOTES || `v${VERSION}`);
 const BASE = `https://github.com/${REPO}/releases/latest/download`;
@@ -57,7 +57,7 @@ const api = (p) => `https://api.github.com/repos/${REPO}${p}`;
 const headers = {
   Authorization: `Bearer ${TOKEN}`,
   Accept: 'application/vnd.github+json',
-  'User-Agent': 'projectmanager-publish',
+  'User-Agent': 'pureproject-publish',
   'X-GitHub-Api-Version': '2022-11-28',
 };
 
@@ -88,17 +88,17 @@ function walk(dir, filter, out = []) {
 }
 
 // ─── 找工件 ────────────────────────────────────────────────────────────────
-const exe = walk(path.join(ROOT, 'src-tauri', 'target'), (n) => n === `ProjectManager_${VERSION}_x64-setup.exe`)[0]
-  || walk(path.join(ROOT, 'dist-updates'), (n) => n === `ProjectManager_${VERSION}_x64-setup.exe`)[0];
-const sig = walk(path.join(ROOT, 'src-tauri', 'target'), (n) => n === `ProjectManager_${VERSION}_x64-setup.exe.sig`)[0]
-  || walk(path.join(ROOT, 'dist-updates'), (n) => n === `ProjectManager_${VERSION}_x64-setup.exe.sig`)[0];
+const exe = walk(path.join(ROOT, 'src-tauri', 'target'), (n) => n === `PureProject_${VERSION}_x64-setup.exe`)[0]
+  || walk(path.join(ROOT, 'dist-updates'), (n) => n === `PureProject_${VERSION}_x64-setup.exe`)[0];
+const sig = walk(path.join(ROOT, 'src-tauri', 'target'), (n) => n === `PureProject_${VERSION}_x64-setup.exe.sig`)[0]
+  || walk(path.join(ROOT, 'dist-updates'), (n) => n === `PureProject_${VERSION}_x64-setup.exe.sig`)[0];
 const apkArg = typeof args.apk === 'string' ? path.resolve(args.apk) : null;
 const apk = apkArg
   || fs.readdirSync(ROOT).filter((f) => f.endsWith('.apk') && f.includes(VERSION)).map((f) => path.join(ROOT, f))[0]
   || walk(path.join(ROOT, 'dist-updates'), (n) => n.endsWith('.apk') && n.includes(VERSION))[0];
 
 if (!exe || !sig) {
-  console.error(`✗ 找不到 Windows 工件（ProjectManager_${VERSION}_x64-setup.exe / .sig），请先 pnpm build:win`);
+  console.error(`✗ 找不到 Windows 工件（PureProject_${VERSION}_x64-setup.exe / .sig），请先 pnpm build:win`);
   process.exit(1);
 }
 

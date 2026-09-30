@@ -14,7 +14,7 @@
 //! {
 //!   "version": "0.8.0",
 //!   "notes": "更新说明",
-//!   "url": "http://<host>/updates/ProjectManager-android-arm64-v0.8.0.apk",
+//!   "url": "http://<host>/updates/PureProject-android-arm64-v0.8.0.apk",
 //!   "required": false
 //! }
 //! ```
@@ -259,7 +259,7 @@ pub async fn download_update(app: AppHandle, url: String) -> Result<String, Stri
     if let Ok(entries) = std::fs::read_dir(&app_data_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with("ProjectManager") && name.ends_with(".apk") {
+            if name.starts_with("PureProject") && name.ends_with(".apk") {
                 let _ = std::fs::remove_file(entry.path());
             }
         }

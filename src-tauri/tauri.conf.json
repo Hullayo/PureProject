@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Jianxiang V1.2",
+  "productName": "PureProject",
   "version": "1.2.0",
-  "identifier": "com.root.projectmanager.v12",
+  "identifier": "com.root.pureproject.v12",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -36,13 +36,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico"
+      }
+    }
   },
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY2MUFBNDJFQjA1NzcwOUQKUldTZGNGZXdMcVFhOWs5UTgzYTZsYkV1Z0I4dWcwRmVoSy9UNXp2VXdQb3d0bDhjRDUxWW55TnIK",
       "endpoints": [
-        "https://github.com/AlicDanclic/ProjectManager/releases/latest/download/latest.json"
+        "https://github.com/Hullayo/PureProject/releases/latest/download/latest.json"
       ],
       "dangerousInsecureTransportProtocol": true,
       "windows": {

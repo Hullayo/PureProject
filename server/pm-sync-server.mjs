@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * pm-sync-server.mjs — ProjectManager 同步服务器（Node 零依赖）
+ * pm-sync-server.mjs — PureProject 同步服务器（Node 零依赖）
  *
  * 与「更新服务器」同机、独立端口（默认 8787）。
  *

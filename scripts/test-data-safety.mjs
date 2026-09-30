@@ -289,6 +289,8 @@ console.log('\n[3] 全量备份与恢复');
   const parsed = parseBackup(json);
   ok(parsed.ok, '备份包可解析');
   eq(parsed.ok && parsed.projects.map((p) => p.project.name), ['One', 'Two'], '解析出 2 个项目');
+  const legacyParsed = parseBackup(JSON.stringify({ ...raw, kind: 'projectmanager-backup' }));
+  ok(legacyParsed.ok && legacyParsed.projects.length === 2, '旧 ProjectManager 备份标识仍可导入');
 
   // 单项目 .pm 也能当备份导入
   const single = parseBackup(JSON.stringify(mkPm('Solo')));
@@ -331,7 +333,7 @@ console.log('\n[3] 全量备份与恢复');
   const r2 = mergeBackupInto(incomingOld, [{ id: 'p1', name: 'One(newer-local)', updated_at: '2026-01-01T00:00:00.000Z' }], fromPm);
   eq(r2.report, { added: 0, replaced: 0, skipped: 1 }, '合并：本地更新时跳过（不倒退）');
 
-  eq(backupFileName(new Date(2026, 8, 15, 13, 4)), 'ProjectManager-backup-20260915-1304.json', '备份文件名带时间戳');
+  eq(backupFileName(new Date(2026, 8, 15, 13, 4)), 'PureProject-backup-20260915-1304.json', '备份文件名带时间戳');
 }
 
 // ─── 4. 存储健康（写入失败必须可见） ───────────────────────────────────────
@@ -544,14 +546,14 @@ console.log('\n[9] 更新源配置');
 {
   eq(DEFAULT_UPDATE_HOST, '', '默认服务器地址留空（不再内置 IP）');
   eq(DEFAULT_UPDATE_PORT, '', '默认端口留空');
-  eq(DEFAULT_GITHUB_REPO, 'AlicDanclic/ProjectManager', '默认 GitHub 仓库');
+  eq(DEFAULT_GITHUB_REPO, 'Hullayo/PureProject', '默认 GitHub 仓库');
   eq(getUpdateSource(), 'github', '★ 未配置过时默认 GitHub（首次安装走 GitHub）');
 
   const gh = buildManifestUrl(
     { source: 'github', host: '', port: '', repo: DEFAULT_GITHUB_REPO },
     'desktop'
   );
-  eq(gh, 'https://github.com/AlicDanclic/ProjectManager/releases/latest/download/latest.json', 'GitHub 桌面清单地址');
+  eq(gh, 'https://github.com/Hullayo/PureProject/releases/latest/download/latest.json', 'GitHub 桌面清单地址');
   eq(
     buildManifestUrl({ source: 'github', host: '', port: '', repo: 'o/r' }, 'android'),
     'https://github.com/o/r/releases/latest/download/android.json',

@@ -123,7 +123,7 @@ git restore --source <提交编号> -- path/to/file
 发布通过验证的版本时创建带说明的标签：
 
 ```powershell
-git tag -a v1.2.0 -m "Jianxiang V1.2.0"
+git tag -a v1.2.0 -m "PureProject V1.2.0"
 git push origin v1.2.0
 ```
 

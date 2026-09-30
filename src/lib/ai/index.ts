@@ -174,7 +174,7 @@ export async function saveReport(projectName: string, html: string): Promise<str
   const docsDir = await invoke<string>('get_documents_dir');
   const safeName = projectName.replace(/[^a-zA-Z0-9一-鿿_-]/g, '_');
   const timestamp = new Date().toISOString().slice(0, 10);
-  const path = `${docsDir}/ProjectManager/Reports/${safeName}_report_${timestamp}.html`;
+  const path = `${docsDir}/PureProject/Reports/${safeName}_report_${timestamp}.html`;
   await invoke('save_text_file', { path, content: html });
   return path;
 }

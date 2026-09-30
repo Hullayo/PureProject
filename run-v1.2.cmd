@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-set "APP_EXE=%~dp0app\Jianxiang-V1.2.exe"
+set "APP_EXE=%~dp0app\PureProject.exe"
 
 if not exist "%APP_EXE%" (
   echo [V1.2] Desktop executable not found:

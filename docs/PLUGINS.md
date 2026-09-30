@@ -1,13 +1,13 @@
-# ProjectManager 插件系统
+# 简项（PureProject）插件系统
 
-> 版本兼容：本文档对应 **ProjectManager v1.2 / 插件 API v1**。0.x 插件不会被新版本加载。
+> 版本兼容：本文档对应 **PureProject v1.2 / 插件 API v1**。0.x 插件不会被新版本加载。
 
-ProjectManager 的插件是**单文件 JS/TS 模块**，可在不修改主程序的前提下扩展命令、
+PureProject 的插件是**单文件 JS/TS 模块**，可在不修改主程序的前提下扩展命令、
 视图与生命周期钩子。插件在本应用进程内运行。
 
 ---
 
-## 1. 什么是 ProjectManager 插件
+## 1. 什么是 PureProject 插件
 
 **适用场景**
 

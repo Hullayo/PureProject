@@ -1,6 +1,6 @@
-# ProjectManager V1.2
+# 简项（PureProject）V1.2
 
-ProjectManager 是基于 Tauri 2、Svelte 5 和 TypeScript 的本地优先项目管理工具，支持桌面端与 Android。V1.2 继承 V1.1 的核心数据模型：
+简项（PureProject）是基于 Tauri 2、Svelte 5 和 TypeScript 的本地优先项目管理工具，支持桌面端与 Android。V1.2 继承 V1.1 的核心数据模型：
 
 ```text
 项目 -> 任务组 -> 状态 -> 任务

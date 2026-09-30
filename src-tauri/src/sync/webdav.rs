@@ -1,7 +1,9 @@
 use super::SyncResult;
 
-const FILE_NAME: &str = "projectmanager_backup.json";
-const JIANGUOYUN_APP_DIR: &str = "ProjectManager";
+const FILE_NAME: &str = "pureproject_backup.json";
+const JIANGUOYUN_APP_DIR: &str = "PureProject";
+const LEGACY_FILE_NAME: &str = "projectmanager_backup.json";
+const LEGACY_JIANGUOYUN_APP_DIR: &str = "ProjectManager";
 
 /// 确保 URL 指向具体的文件（不是目录）
 fn file_url(base: &str) -> String {
@@ -30,6 +32,28 @@ fn file_url(base: &str) -> String {
     }
 }
 
+/// 品牌升级后仍可读取默认位置中的旧备份；显式文件 URL 不做猜测。
+fn legacy_file_url(base: &str) -> Option<String> {
+    let b = base.trim_end_matches('/');
+    let parsed = reqwest::Url::parse(b).ok();
+    let has_file_name = parsed
+        .as_ref()
+        .and_then(|url| url.path_segments()?.next_back())
+        .map(|segment| segment.contains('.'))
+        .unwrap_or(false);
+    if has_file_name {
+        return None;
+    }
+    if is_jianguoyun_root(parsed.as_ref()) {
+        Some(format!(
+            "{}/{}/{}",
+            b, LEGACY_JIANGUOYUN_APP_DIR, LEGACY_FILE_NAME
+        ))
+    } else {
+        Some(format!("{}/{}", b, LEGACY_FILE_NAME))
+    }
+}
+
 fn is_jianguoyun_root(url: Option<&reqwest::Url>) -> bool {
     url.and_then(|u| u.host_str())
         .map(|host| host.eq_ignore_ascii_case("dav.jianguoyun.com"))
@@ -48,13 +72,21 @@ fn collection_url(full_url: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{collection_url, file_url, propfind_succeeded, FILE_NAME};
+    use super::{collection_url, file_url, legacy_file_url, propfind_succeeded, FILE_NAME};
 
     #[test]
-    fn stores_jianguoyun_backup_in_projectmanager_directory() {
+    fn stores_jianguoyun_backup_in_pureproject_directory() {
         assert_eq!(
             file_url("https://dav.jianguoyun.com/dav/"),
-            format!("https://dav.jianguoyun.com/dav/ProjectManager/{}", FILE_NAME)
+            format!("https://dav.jianguoyun.com/dav/PureProject/{}", FILE_NAME)
+        );
+    }
+
+    #[test]
+    fn locates_legacy_backup_for_brand_migration() {
+        assert_eq!(
+            legacy_file_url("https://dav.jianguoyun.com/dav/"),
+            Some("https://dav.jianguoyun.com/dav/ProjectManager/projectmanager_backup.json".into())
         );
     }
 
@@ -69,8 +101,8 @@ mod tests {
     #[test]
     fn returns_parent_collection_url() {
         assert_eq!(
-            collection_url("https://dav.jianguoyun.com/dav/ProjectManager/projectmanager_backup.json"),
-            "https://dav.jianguoyun.com/dav/ProjectManager/"
+            collection_url("https://dav.jianguoyun.com/dav/PureProject/pureproject_backup.json"),
+            "https://dav.jianguoyun.com/dav/PureProject/"
         );
     }
 
@@ -132,12 +164,23 @@ fn propfind_succeeded(status: reqwest::StatusCode) -> bool {
 pub async fn pull(url: &str, username: &str, password: &str) -> Result<String, String> {
     let full_url = file_url(url);
     let client = reqwest::Client::new();
-    let resp = client
+    let mut resp = client
         .get(&full_url)
         .basic_auth(username, Some(password))
         .send()
         .await
         .map_err(|e| format!("WebDAV 请求失败: {}", e))?;
+
+    if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        if let Some(legacy_url) = legacy_file_url(url) {
+            resp = client
+                .get(&legacy_url)
+                .basic_auth(username, Some(password))
+                .send()
+                .await
+                .map_err(|e| format!("WebDAV 旧备份请求失败: {}", e))?;
+        }
+    }
 
     if resp.status().is_success() {
         resp.text().await.map_err(|e| format!("读取响应失败: {}", e))

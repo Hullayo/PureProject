@@ -1,25 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <!--
-    Android 自适应图标「前景层」：只保留剪贴板图形（无背景），外围留出安全区。
-    由 tauri icon 通过 static/icon-manifest.json 的 android_fg 引用，
-    背景色取自 ios-color (#a33b32)，见 package.json 的 icons 脚本。
-  -->
+  <!-- Android adaptive icon foreground. The red background is generated separately. -->
   <g transform="translate(64 64) scale(0.82) translate(-64 -64)">
-    <!-- 剪贴板主体 -->
-    <rect x="30" y="28" width="68" height="80" rx="8" fill="rgba(255,255,255,0.15)"/>
-    <!-- 剪贴板夹子 -->
-    <rect x="46" y="20" width="36" height="16" rx="6" fill="rgba(255,255,255,0.25)"/>
-    <circle cx="64" cy="28" r="4" fill="rgba(255,255,255,0.4)"/>
-    <!-- 任务行 1 - 已完成 -->
-    <rect x="42" y="50" width="12" height="12" rx="3" fill="rgba(255,255,255,0.9)"/>
-    <path d="M45 56 L48 59 L52 53" stroke="#a33b32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="60" y="53" width="26" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
-    <!-- 任务行 2 - 已完成 -->
-    <rect x="42" y="70" width="12" height="12" rx="3" fill="rgba(255,255,255,0.9)"/>
-    <path d="M45 76 L48 79 L52 73" stroke="#a33b32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="60" y="73" width="20" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
-    <!-- 任务行 3 - 未完成 -->
-    <rect x="42" y="90" width="12" height="12" rx="3" fill="rgba(255,255,255,0.3)"/>
-    <rect x="60" y="93" width="24" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+    <rect x="13" y="13" width="102" height="102" rx="5" stroke="rgba(255,250,241,0.82)" stroke-width="4"/>
+    <path d="M31 33C42 29 51 31 64 39V98C51 91 42 89 31 93V33Z" fill="rgba(255,250,241,0.92)"/>
+    <path d="M97 33C86 29 77 31 64 39V98C77 91 86 89 97 93V33Z" fill="rgba(255,250,241,0.76)"/>
+    <path d="M64 40V99" stroke="#a33b32" stroke-width="3" opacity="0.72"/>
+    <path d="M40 48H55M40 60H55M40 72H52" stroke="#a33b32" stroke-width="4" stroke-linecap="square" opacity="0.78"/>
+    <path d="M74 48H88M74 60H88M74 72H85" stroke="#a33b32" stroke-width="4" stroke-linecap="square" opacity="0.72"/>
   </g>
 </svg>

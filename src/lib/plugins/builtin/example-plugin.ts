@@ -64,7 +64,7 @@ export const EXAMPLE_PLUGIN: StoredPlugin = {
     name: '示例插件',
     version: '1.0.0',
     description: '演示 commands / views / hooks 三类扩展点',
-    author: 'ProjectManager',
+    author: 'PureProject',
     main: 'inline',
     capabilities: ['commands', 'views', 'hooks'],
     enabled: false,

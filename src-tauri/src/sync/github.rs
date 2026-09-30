@@ -32,7 +32,7 @@ pub async fn push_gist(gist_id: &str, token: &str, content: &str) -> Result<Sync
     let resp = if gist_id.is_empty() {
         client.post(&url)
             .bearer_auth(token)
-            .header("User-Agent", "ProjectManager")
+            .header("User-Agent", "PureProject")
             .json(&body)
             .send()
             .await
@@ -40,7 +40,7 @@ pub async fn push_gist(gist_id: &str, token: &str, content: &str) -> Result<Sync
     } else {
         client.patch(&url)
             .bearer_auth(token)
-            .header("User-Agent", "ProjectManager")
+            .header("User-Agent", "PureProject")
             .json(&body)
             .send()
             .await
@@ -63,7 +63,7 @@ pub async fn pull_gist(gist_id: &str, token: &str) -> Result<String, String> {
 
     let resp = client.get(&url)
         .bearer_auth(token)
-        .header("User-Agent", "ProjectManager")
+        .header("User-Agent", "PureProject")
         .send()
         .await
         .map_err(|e| format!("GitHub API request failed: {}", e))?;
@@ -94,7 +94,7 @@ pub async fn test_gist(gist_id: &str, token: &str) -> Result<bool, String> {
 
     let resp = client.get(&url)
         .bearer_auth(token)
-        .header("User-Agent", "ProjectManager")
+        .header("User-Agent", "PureProject")
         .send()
         .await
         .map_err(|e| format!("GitHub API request failed: {}", e))?;

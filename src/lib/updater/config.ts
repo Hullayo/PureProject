@@ -27,7 +27,7 @@ export const DEFAULT_UPDATE_HOST = '';
 /** 默认端口：留空（不预填） */
 export const DEFAULT_UPDATE_PORT = '';
 /** 默认 GitHub 仓库（owner/repo） */
-export const DEFAULT_GITHUB_REPO = 'AlicDanclic/ProjectManager';
+export const DEFAULT_GITHUB_REPO = 'Hullayo/PureProject';
 
 function read(key: string, fallback = ''): string {
   try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }

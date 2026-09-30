@@ -159,7 +159,7 @@ export const zh = {
   'task.startTracking': '开始计时',
   'task.tracking': '计时中',
   'task.totalTime': '总工时',
-  'task.welcome': '欢迎使用 ProjectManager',
+  'task.welcome': '欢迎使用简项',
   'task.welcomeSub': '在左侧选择或创建一个项目开始',
 
   // ─── 任务详情 ─────────────────────────────────────────────────────────────
@@ -617,7 +617,7 @@ export const zh = {
   'report.taskDetails': '任务明细',
   'report.milestones': '里程碑',
   'report.changelog': '变更日志',
-  'report.footer': '由 ProjectManager 生成',
+  'report.footer': '由简项生成',
   'report.noTasks': '暂无任务',
   'report.colTask': '任务',
   'report.colTags': '标签',

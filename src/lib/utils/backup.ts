@@ -6,7 +6,7 @@
  * 备份包结构（单文件 JSON，便于放网盘/微信传输）：
  * ```jsonc
  * {
- *   "kind": "projectmanager-backup",
+ *   "kind": "pureproject-backup",
  *   "schema_version": 2,
  *   "app_version": "0.5.4",
  *   "exported_at": "2026-09-15T…",
@@ -26,7 +26,8 @@ import type { Project, PmFile } from '$lib/types';
 import { CURRENT_PM_SCHEMA, formatPmErrors, parsePmText } from './pm-schema';
 
 /** 备份包标识 */
-export const BACKUP_KIND = 'projectmanager-backup';
+export const BACKUP_KIND = 'pureproject-backup';
+const LEGACY_BACKUP_KINDS = new Set(['projectmanager-backup']);
 
 /** 应用设置键（可安全备份的） */
 const SETTINGS_KEYS = [
@@ -101,11 +102,11 @@ export function buildBackup(projects: Project[], toPm: (p: Project) => PmFile): 
   return JSON.stringify(backup, null, 2);
 }
 
-/** 备份包文件名：ProjectManager-backup-20260915-1304.json */
+/** 备份包文件名：PureProject-backup-20260915-1304.json */
 export function backupFileName(d = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0');
   const ts = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
-  return `ProjectManager-backup-${ts}.json`;
+  return `PureProject-backup-${ts}.json`;
 }
 
 export interface BackupParseOk {
@@ -139,7 +140,7 @@ export function parseBackup(text: string): BackupParseResult {
   const obj = raw as Record<string, unknown>;
 
   // 兼容：也允许直接丢一个 .pm 文件（单项目）进来
-  if (obj.kind !== BACKUP_KIND) {
+  if (obj.kind !== BACKUP_KIND && !LEGACY_BACKUP_KINDS.has(String(obj.kind))) {
     const single = parsePmText(text, '备份文件');
     if (single.ok) {
       return {
@@ -152,7 +153,7 @@ export function parseBackup(text: string): BackupParseResult {
         appVersion: '',
       };
     }
-    return { ok: false, error: `不是 ProjectManager 备份包（缺少 kind=${BACKUP_KIND}），且作为单个 .pm 也解析失败：${formatPmErrors(single.errors)}` };
+    return { ok: false, error: `不是 PureProject 备份包（缺少 kind=${BACKUP_KIND}），且作为单个 .pm 也解析失败：${formatPmErrors(single.errors)}` };
   }
 
   if (!Array.isArray(obj.projects)) return { ok: false, error: '备份包缺少 projects 数组' };

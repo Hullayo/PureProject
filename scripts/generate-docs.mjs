@@ -281,13 +281,13 @@ function generateIndexHtml(pages) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProjectManager 文档</title>
+<title>简项（PureProject）文档</title>
 <style>${generateCss()}</style>
 </head>
 <body>
 ${generateSidebar(pages, 'index')}
 <div class="main">
-<h1>ProjectManager 文档</h1>
+<h1>简项（PureProject）文档</h1>
 <div class="module-desc">
 <p>多项目任务管理器 — Tauri 2 + Svelte 5 + TypeScript</p>
 <p style="margin-top:8px">左侧导航浏览模块，点击展开查看详细信息。支持搜索函数和类型名。</p>
@@ -313,7 +313,7 @@ function generatePageHtml(page, pages) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${page.title} — ProjectManager 文档</title>
+<title>${page.title} — PureProject 文档</title>
 <style>${generateCss()}</style>
 </head>
 <body>
@@ -414,8 +414,8 @@ function generateSidebar(pages, activeSlug) {
 
   let html = `<div class="sidebar">
 <div class="sidebar-title">
-<svg width="20" height="20" viewBox="0 0 128 128" fill="none"><rect width="128" height="128" rx="28" fill="#4f46e5"/><rect x="42" y="50" width="12" height="12" rx="3" fill="#fff"/><path d="M45 56 L48 59 L52 53" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round"/><rect x="60" y="53" width="26" height="4" rx="2" fill="rgba(255,255,255,0.5)"/></svg>
-ProjectManager
+<svg width="20" height="20" viewBox="0 0 128 128" fill="none"><rect x="3" y="3" width="122" height="122" rx="12" fill="#a33b32"/><rect x="13" y="13" width="102" height="102" rx="5" stroke="rgba(255,250,241,0.82)" stroke-width="4"/><path d="M31 33C42 29 51 31 64 39V98C51 91 42 89 31 93V33Z" fill="rgba(255,250,241,0.92)"/><path d="M97 33C86 29 77 31 64 39V98C77 91 86 89 97 93V33Z" fill="rgba(255,250,241,0.76)"/><path d="M64 40V99" stroke="#a33b32" stroke-width="3" opacity="0.72"/></svg>
+PureProject
 </div>
 <a class="nav-item${activeSlug === 'index' ? ' active' : ''}" href="index.html">首页</a>`;
 

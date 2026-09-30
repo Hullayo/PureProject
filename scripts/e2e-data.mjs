@@ -123,7 +123,7 @@ async function preflight() {
   const goodBackup = path.join(tmpDir, 'backup.json');
   const badFile = path.join(tmpDir, 'bad.json');
   const backupPayload = {
-    kind: 'projectmanager-backup',
+    kind: 'pureproject-backup',
     schema_version: 4,
     app_version: '1.1.0',
     exported_at: '2026-09-15T00:00:00.000Z',
@@ -197,7 +197,7 @@ async function preflight() {
   await sleep(900);
   const after = await cdp.eval(`JSON.parse(localStorage.pm_projects).projects.length`);
   check(after === 2, '非法备份不改变项目数量', String(after));
-  const errText = await cdp.eval(`document.body.innerText.includes('导入失败') || document.body.innerText.includes('不是 ProjectManager') || document.body.innerText.includes('导出失败')`);
+  const errText = await cdp.eval(`document.body.innerText.includes('导入失败') || document.body.innerText.includes('不是 PureProject') || document.body.innerText.includes('导出失败')`);
   check(errText, '非法备份给出可读错误提示');
 
   // ── 6. 外部副本失败：不得冒充「本地数据保存失败」───────────────────────

@@ -1,4 +1,4 @@
-# 简项 V1.2 开发仓库
+# 简项（PureProject）V1.2 开发仓库
 
 本目录是以简项 V1.1 为基线创建的 V1.2 独立开发仓库，应用版本为 `1.2.0`，创建日期为 2026-09-30。
 
@@ -9,10 +9,16 @@ V1.1 已完成的前两轮 20 项界面改造全部作为 V1.2 基线保留，�
 双击根目录中的 `run-v1.2.cmd`，即可启动已经编译完成的 Windows 桌面程序：
 
 ```text
-app\Jianxiang-V1.2.exe
+app\PureProject.exe
 ```
 
 运行桌面程序不需要安装 Node.js、pnpm、npm 或 Rust。
+
+需要安装到 Windows 时，运行：
+
+```text
+app\PureProject_1.2.0_x64-setup.exe
+```
 
 ## Web 版本
 
@@ -32,7 +38,8 @@ run-web-v1.2.cmd 1421
 
 ## 目录内容
 
-- `app/Jianxiang-V1.2.exe`：基于 V1.1 全部 20 条改造构建、使用独立应用标识的 V1.2 Windows 桌面程序。
+- `app/PureProject.exe`：无需安装的 V1.2 Windows 便携程序。
+- `app/PureProject_1.2.0_x64-setup.exe`：使用书本应用图标的 V1.2 Windows NSIS 安装程序。
 - `src/`、`static/`：前端源码和静态资源。
 - `src-tauri/`：Tauri/Rust 桌面端源码、Cargo 依赖锁定文件及独立构建结果。
 - `node_modules/`：完整 npm 依赖；所有 pnpm 链接均指向本目录内部。
@@ -61,15 +68,15 @@ cargo build --release --features custom-protocol --manifest-path src-tauri\Cargo
 构建后的桌面程序位于：
 
 ```text
-src-tauri\target\release\projectmanager.exe
+src-tauri\target\release\pureproject.exe
 ```
 
 ## 说明
 
 - 本目录可以脱离外层原项目目录运行，启动脚本不会引用外层源码或依赖。
 - 桌面程序以 Tauri 的 `custom-protocol` 生产模式编译，界面资源已内置，不依赖 `localhost` 或 Web 服务。
-- 独立桌面程序使用专属应用标识 `com.root.projectmanager.v12`，与 V1.1 及更早版本的数据目录隔离。
+- 独立桌面程序使用专属应用标识 `com.root.pureproject.v12`，与 V1.1 及更早版本的数据目录隔离。
 - 独立副本关闭了单实例插件，可以与原版和 V1.1 同时运行，方便对照修改。
 - V1.2 独立版拥有单独的 Windows 应用数据目录；如需旧版项目数据，可通过应用内“导出/导入”迁移。
-- 请使用根目录的 `run-v1.2.cmd` 或 `app/Jianxiang-V1.2.exe`。
+- 请使用根目录的 `run-v1.2.cmd` 或 `app/PureProject.exe`。
 - `src-tauri/target` 和 `node_modules` 体积较大，是为了保留完整依赖和独立构建能力。

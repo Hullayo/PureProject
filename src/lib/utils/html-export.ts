@@ -350,7 +350,7 @@ async function androidSaveToDownloads(
   const A = await import('tauri-plugin-android-fs-api');
   const uri = await A.createNewPublicFile(
     A.PublicGeneralPurposeDir.Download,
-    `ProjectManager/${name}`,
+    `PureProject/${name}`,
     mime,
     { isPending: true }
   );
@@ -358,7 +358,7 @@ async function androidSaveToDownloads(
   else if (payload.bytes) await A.writeFile(uri, payload.bytes);
   await A.setPublicFilePending(uri, false);
   try { await A.scanPublicFile(uri); } catch { /* 扫描失败不影响保存 */ }
-  return { path: `Download/ProjectManager/${name}`, uri };
+  return { path: `Download/PureProject/${name}`, uri };
 }
 
 /** 服务器渲染 PDF，返回可下载地址 */
@@ -450,7 +450,7 @@ async function exportPdfTo(project: Project, location: ExportLocation): Promise<
     if (location === 'downloads') {
       uri = await A.createNewPublicFile(
         A.PublicGeneralPurposeDir.Download,
-        `ProjectManager/${name}`,
+        `PureProject/${name}`,
         'application/pdf',
         { isPending: true }
       );
@@ -476,7 +476,7 @@ async function exportPdfTo(project: Project, location: ExportLocation): Promise<
     if (location === 'downloads') {
       await A.setPublicFilePending(uri, false);
       try { await A.scanPublicFile(uri); } catch { /* ignore */ }
-      return { kind: 'saved', path: `Download/ProjectManager/${name}`, uri };
+      return { kind: 'saved', path: `Download/PureProject/${name}`, uri };
     }
     let path = name;
     try { path = (await A.getName(uri)) || name; } catch { /* ignore */ }
