@@ -1,0 +1,223 @@
+/**
+ * 全局基础样式
+ *
+ * 包含：
+ * - CSS Reset（盒模型、边距重置）
+ * - 主题变量定义（浅色模式默认值）
+ * - 深色模式变量覆盖（.dark class）
+ * - 自定义滚动条样式
+ * - 表单元素基础样式
+ *
+ * 主题通过在 `.app` 容器上切换 `.dark` class 实现。
+ * 所有组件使用 CSS 自定义属性（如 var(--bg)、var(--text)）引用颜色。
+ */
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-wrap: break-word; }
+body {
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Theme Variables — 浅色模式（默认） */
+:root {
+  --font-ui: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", STSong, SimSun, serif;
+  --font-kai: "Kaiti SC", STKaiti, KaiTi, serif;
+  --bg: #f7f3eb;
+  --sidebar: #eee8dc;
+  --surface: #ece8df;
+  --surface-raised: #fffdf8;
+  --border: #d7cebf;
+  --border-strong: #9f9280;
+  --text: #2b261f;
+  --text-secondary: #62594e;
+  --text-muted: #8b8174;
+  --accent: #9f352f;
+  --accent-hover: #7f2824;
+  --accent-contrast: #fffaf1;
+  --accent-light: rgba(159, 53, 47, 0.1);
+  --red: #b63b34;
+  --yellow: #a97727;
+  --green: #477463;
+  --jade: #42695d;
+  --blue-gray: #596d73;
+  --paper-deep: #e7dece;
+  --ink-soft: rgba(43, 38, 31, 0.07);
+  --focus-ring: rgba(159, 53, 47, 0.2);
+  --shadow-soft: 0 5px 16px rgba(63, 48, 31, 0.09);
+  --shadow-float: 0 18px 42px rgba(49, 37, 24, 0.2);
+}
+
+/* 让原生控件（滚动条 / select / input）跟随主题；与 .app.dark 同作用域才正确 */
+.app { color-scheme: light; }
+
+/* Theme Variables — 深色模式 */
+.dark {
+  color-scheme: dark;
+  --bg: #1b1a17;
+  --sidebar: #23211d;
+  --surface: #2b2823;
+  --surface-raised: #312d27;
+  --border: #4b453b;
+  --border-strong: #716759;
+  --text: #f0eadf;
+  --text-secondary: #c9c0b3;
+  --text-muted: #968d80;
+  --accent: #cf6b60;
+  --accent-hover: #e07c71;
+  --accent-contrast: #211614;
+  --accent-light: rgba(207, 107, 96, 0.14);
+  --red: #dd746a;
+  --yellow: #d2a452;
+  --green: #78a995;
+  --jade: #75a18f;
+  --blue-gray: #91a8ad;
+  --paper-deep: #39342d;
+  --ink-soft: rgba(255, 248, 236, 0.06);
+  --focus-ring: rgba(207, 107, 96, 0.24);
+  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.24);
+  --shadow-float: 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+
+::selection {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+
+/* Scrollbar — 细滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border: 2px solid transparent; border-radius: 0; background-clip: padding-box; }
+
+/* Utility — 表单元素基础样式 */
+input, textarea, button, select { font-family: var(--font-ui); font-size: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea { border: none; outline: none; background: none; color: inherit; }
+input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 0.85; }
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* ─── Animation Levels ───────────────────────────────────────────────────── */
+
+/* 无动画：禁用一切过渡和动画 */
+[data-animation="none"] * {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+
+/* 适中：默认时长和缓动 */
+[data-animation="moderate"] {
+  --anim-duration: 0.2s;
+  --anim-ease: ease;
+  --anim-ease-out: ease-out;
+}
+
+/* 丰富：更长时长 + 弹性缓动 */
+[data-animation="rich"] {
+  --anim-duration: 0.35s;
+  --anim-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --anim-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Rich 档：按钮点击回弹 */
+[data-animation="rich"] button:active {
+  transform: scale(0.95);
+  transition: transform 0.1s var(--anim-ease);
+}
+
+/* Rich 档：侧边栏项目 hover 偏移 */
+[data-animation="rich"] .project-item:hover {
+  transform: translateX(4px);
+  transition: transform 0.2s var(--anim-ease);
+}
+
+/* Rich 档：进度条填充动画 */
+@keyframes fillBar {
+  from { width: 0; }
+}
+[data-animation="rich"] .sub-progress-fill,
+[data-animation="rich"] .time-bar-fill,
+[data-animation="rich"] .stack-seg,
+[data-animation="rich"] .tag-bar-fill {
+  animation: fillBar 0.6s var(--anim-ease-out) forwards;
+}
+
+/* ─── 拖拽排序（src/lib/actions/sortable.ts） ────────────────────────────── */
+
+/* 拖拽期间：全局禁用文本选中与 hover 位移，避免和 translateY 打架 */
+body.is-sorting,
+body.is-sorting * {
+  cursor: grabbing !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+body.is-sorting .project-item:hover,
+[data-animation="rich"] body.is-sorting .project-item:hover {
+  transform: none;
+  transition: none;
+}
+
+/* 跟随手指/鼠标的浮层 */
+.sortable-ghost {
+  border-radius: 4px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-float);
+  outline: 1px solid var(--accent);
+  overflow: hidden;
+}
+
+/* 被拖元素本身：降低不透明度当“空槽”，并禁用过渡避免抖动 */
+.sortable-dragging-item {
+  transition: none !important;
+}
+
+/* 拖拽抓手：触摸端必须禁止浏览器接管手势（否则会变成滚页面） */
+.drag-handle {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* 看板落点指示线 */
+.kanban-card.drop-before::before,
+.kanban-card.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.kanban-card.drop-before::before { top: -4px; }
+.kanban-card.drop-after::after { bottom: -4px; }
+.kanban-card { position: relative; }
+.kanban-card.drop-target-col { outline: 2px dashed var(--accent); outline-offset: -2px; }

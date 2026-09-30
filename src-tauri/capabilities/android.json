@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "android-only",
+  "description": "Android 专用：APK 安装器 + SAF 文件保存（android-fs 插件仅 Android 可用，避免桌面构建找不到权限）。注意 `android-fs:default` = `all-without-delete`，**不含** write_file / write_text_file / remove_file，导出必须单独显式授权，否则真机报 “Command plugin:android-fs|write_text_file not allowed by ACL”。改动后请跑 `pnpm check:acl`。",
+  "windows": ["main"],
+  "platforms": ["android"],
+  "permissions": [
+    "android-installer:default",
+
+    "android-fs:default",
+
+    "android-fs:allow-write-file",
+    "android-fs:allow-write-text-file",
+    "android-fs:allow-remove-file"
+  ]
+}

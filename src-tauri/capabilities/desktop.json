@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop-updater",
+  "description": "桌面端自动更新权限：tauri-plugin-updater 不支持移动端，故单独放在 desktop 平台能力中，避免 Android 构建时找不到该插件权限",
+  "windows": ["main"],
+  "platforms": ["linux", "macOS", "windows"],
+  "permissions": [
+    "updater:default",
+    "process:allow-restart"
+  ]
+}

@@ -1,0 +1,89 @@
+# ===== 依赖 / 包管理器 =====
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 项目使用 pnpm，其他锁文件不保留
+package-lock.json
+yarn.lock
+
+# ===== 构建产物 / 缓存 =====
+.svelte-kit/
+build/
+dist/
+out/
+.output/
+.vercel/
+.netlify/
+.vite/
+*.tsbuildinfo
+vite.config.*.timestamp-*
+
+# ===== Tauri / Rust =====
+src-tauri/target/
+target/
+**/*.rs.bk
+
+# Tauri 自动生成的 Android / iOS / schemas 工程
+src-tauri/gen/
+
+# ===== Android =====
+.gradle/
+**/.gradle/
+**/build/
+**/captures/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.jks
+*.keystore
+!debug.keystore
+
+# ===== iOS =====
+DerivedData/
+*.ipa
+*.dSYM
+*.mobileprovision
+
+# ===== 环境变量 =====
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# ===== 日志 / 测试 / 覆盖率 =====
+*.log
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.swp
+*.swo
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== 临时文件 =====
+# new.txt 看起来只是目录清单，不需要提交；如果需要保留可删掉这行
+new.txt
+*.tmp
+*.temp
+
+# ===== 独立运行包（保留在工作目录，不提交 Git） =====
+runtime/
+app/*.exe
