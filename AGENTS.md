@@ -7,4 +7,4 @@
 - `build.ps1 -Task Restore/Build/Test/Publish` 是本地入口，详见 README。测试为控制台自检，不使用 `dotnet test`。
 - `.tools/`、`.nuget/`、`.dotnet-home/`、`artifacts/`、`bin/` 和 `obj/` 是本机生成内容，不提交。
 - 保留固定测试样本、许可证及对应字节哈希；历史验证记录中的仓库链接只作为来源证据。
-- 仓库未配置远程；新增远程时应选择简项专用仓库。不得把墨渡或旧 ProjectManager 当作默认推送目标。
+- 简项默认远程 origin 为 https://github.com/Hullayo/PureProject.git，main 维护 WinUI 原生版，legacy/tauri-v1.2 保留旧版 Tauri。不得把墨渡或旧 ProjectManager 的其他仓库当作默认推送目标；历史托管链接只作来源证据。

@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Task Publish -C
 - `.github/workflows/winui.yml`：独立仓库的 Windows CI。
 - `artifacts/`：本机生成的构建、日志和测试输出，不纳入 Git。
 
-该仓库使用自己的 `main` 分支和 `.git`，未配置远程地址。今后简项的开发与构建都从这里开始。拆分来源、旧目录对应关系与验证记录见 [独立仓库说明](docs/REPOSITORY.md)。
+本地目录拥有独立 `.git`，远程 `origin` 为 [Hullayo/PureProject](https://github.com/Hullayo/PureProject)（`https://github.com/Hullayo/PureProject.git`）。`main` 维护简项 WinUI 原生版；旧版 Tauri 保存在 [legacy/tauri-v1.2](https://github.com/Hullayo/PureProject/tree/legacy/tauri-v1.2) 分支。今后简项的开发与构建都从这里开始。拆分来源、旧目录对应关系与验证记录见 [独立仓库说明](docs/REPOSITORY.md)。
 
 ## 主要功能
 

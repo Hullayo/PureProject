@@ -2,7 +2,7 @@
 
 拆分日期：2026-10-07。
 
-简项 PureProject 2.0.1 Windows 原生客户端现在由 `jianxiang` 独立目录维护。该目录拥有自己的 `.git`、`main` 分支、解决方案、构建入口和 Windows CI，未配置远程仓库。
+简项 PureProject 2.0.1 Windows 原生客户端现在由 `jianxiang` 独立目录维护。该目录拥有自己的 `.git`、解决方案、构建入口和 Windows CI。远程 `origin` 为 [Hullayo/PureProject](https://github.com/Hullayo/PureProject)，Git 地址为 `https://github.com/Hullayo/PureProject.git`。`main` 维护 WinUI 原生版，`legacy/tauri-v1.2` 保留该远程原有的 Tauri 版本。
 
 ## 目录对应
 
@@ -24,7 +24,7 @@
 
 本次调整包括 README、构建与测试操作路径、候选包的 Git 源码校验路径、CI 的运行根目录，以及将历史图标提取器的外部输入改为显式参数。应用名称、程序集、用户数据路径、业务实现和兼容性契约沿用现有简项原生版。
 
-许可证与固定测试样本随源码保存。旧 CI、PR 和性能报告链接保持原始地址，作为历史证据，不代表新仓库已经在线发布。
+许可证与固定测试样本随源码保存。旧 CI、PR 和性能报告链接保持原始地址，作为历史证据，不代表当前仓库的 CI 或发布结果。
 
 ## 本机构建环境
 
@@ -40,3 +40,9 @@ Set-Location C:\Users\34890\Desktop\jianxiang
 从新的 Git checkout 开始时，按 README 先在线 Restore。源码本身不需要旧工程、Node.js 或 Rust；可选 REST 集成测试单独需要 Node.js。
 
 本次构建与测试的详细记录保存在本机 `artifacts/repository-validation/`。实际验证结果记录于 [独立仓库验证](REPOSITORY_VALIDATION.md)。日常启动双击根目录 `run.cmd`，默认使用本仓库发布输出。
+
+## 远程分支安排（2026-10-07）
+
+用户指定使用 Hullayo/PureProject，并确认 main 改为简项原生版。该远程原 main 的 Tauri 提交 99f801f61e9a0a26e304419ef05bb8b167fa3f2b 保存为 legacy/tauri-v1.2 分支。原生版 main 合并该旧提交作为历史父节点，保留原生版文件树，通过普通快进推送接续远程历史；未强制推送或删除旧提交。
+
+拆分来源章节描述最初的本地快照来源。接入新远程后，旧 Tauri 提交也保留在 main 的祖先历史中，但旧版文件只在历史分支或对应提交中检出，当前文件树专门维护原生版。
