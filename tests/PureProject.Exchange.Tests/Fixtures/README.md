@@ -28,7 +28,7 @@ exporter is not involved. Regeneration is optional and not part of running tests
 Run the portable regression from any clone using an installed .NET 10 SDK:
 
 ```sh
-dotnet run --project winui/tests/PureProject.Exchange.Tests/PureProject.Exchange.Tests.csproj -c Release -- --regression-fixes --out exchange-regression-results
+dotnet run --project tests/PureProject.Exchange.Tests/PureProject.Exchange.Tests.csproj -c Release -- --regression-fixes --out exchange-regression-results
 ```
 
 Omit `--evidence-root` for ordinary clones. That optional switch adds checks against
