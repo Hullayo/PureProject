@@ -1,0 +1,3 @@
+# Preserve the exact bytes of frozen build inputs and regression fixtures.
+# Preserve fixture and source hashes across independent checkouts.
+* -text

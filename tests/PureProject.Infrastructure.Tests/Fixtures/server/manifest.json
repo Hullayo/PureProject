@@ -1,0 +1,8 @@
+{
+  "source": "ProjectManager/server/pm-sync-server.mjs",
+  "captured": "2026-10-06",
+  "bytes": 20062,
+  "sha256": "213fc4b971ff70f2d5ebfb6f64fff0c3acb6ad65e793b6508bb01de0fcd366c0",
+  "license": "MIT (see LICENSE)",
+  "synthetic_test_dependency": true
+}

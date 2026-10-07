@@ -1,0 +1,72 @@
+name: Jianxiang WinUI validation
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.401'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare validation logs
+        run: New-Item -ItemType Directory -Path artifacts/ci-validation -Force | Out-Null
+      - name: Restore
+        run: |
+          dotnet restore PureProject.sln -p:Platform=x64 2>&1 | Tee-Object artifacts/ci-validation/restore.log
+          if ($LASTEXITCODE -ne 0) { throw 'Restore failed' }
+      - name: Build native application
+        run: |
+          dotnet build src/PureProject.WinUI/PureProject.WinUI.csproj -c Release -p:Platform=x64 --no-restore 2>&1 | Tee-Object artifacts/ci-validation/build.log
+          if ($LASTEXITCODE -ne 0) { throw 'Native build failed' }
+      - name: Core, storage, infrastructure and exchange tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($project in Get-ChildItem tests -Filter '*.csproj' -Recurse | Sort-Object FullName) {
+            $log = Join-Path artifacts/ci-validation ($project.BaseName + '.log')
+            if ($project.BaseName -eq 'PureProject.Infrastructure.Tests') {
+              dotnet run --project $project.FullName -c Release -- --integration 2>&1 | Tee-Object $log
+            } else {
+              dotnet run --project $project.FullName -c Release 2>&1 | Tee-Object $log
+            }
+            if ($LASTEXITCODE -ne 0) { throw "Failed: $($project.Name)" }
+          }
+          dotnet run --project tests/PureProject.Exchange.Tests/PureProject.Exchange.Tests.csproj -c Release --no-build -- --regression-fixes --out artifacts/ci-exchange-regression 2>&1 | Tee-Object artifacts/ci-validation/exchange-regression.log
+          if ($LASTEXITCODE -ne 0) { throw 'Exchange regression failed' }
+      - name: Verify publish output without distributing application binaries
+        run: |
+          dotnet publish src/PureProject.WinUI/PureProject.WinUI.csproj -c Release -r win-x64 --self-contained true -p:Platform=x64 -o artifacts/ci-publish 2>&1 | Tee-Object artifacts/ci-validation/publish.log
+          if ($LASTEXITCODE -ne 0) { throw 'Publish build failed' }
+          $required = @('PureProject.exe','PureProject.dll','PureProject.Core.dll','PureProject.Infrastructure.dll',
+            'PureProject.pri','PureProject.deps.json','PureProject.runtimeconfig.json','App.xbf','MainWindow.xbf','Styles.xbf','ControlStyles.xbf',
+            'coreclr.dll','hostfxr.dll','hostpolicy.dll','Microsoft.UI.Xaml.dll','Microsoft.WindowsAppRuntime.dll',
+            'Assets/icon.ico','Assets/Fonts/HarmonyOS_Sans_SC.ttf','Assets/Fonts/README.md','Assets/Fonts/LICENSE.txt')
+          foreach ($relative in $required) {
+            $path = Join-Path artifacts/ci-publish $relative
+            if (!(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-Item -LiteralPath $path).Length -eq 0) {
+              throw "Required publish file is missing or empty: $relative"
+            }
+          }
+          $publish = (Resolve-Path artifacts/ci-publish).Path
+          $files = @(Get-ChildItem -LiteralPath $publish -File -Recurse | Sort-Object FullName | ForEach-Object {
+            [ordered]@{path=$_.FullName.Substring($publish.Length + 1).Replace('\','/');bytes=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+          })
+          [ordered]@{sourceCommit=$env:GITHUB_SHA;kind='ci-build-verification';runtimeAcceptance='Not performed: native GUI, stress and long-duration acceptance require separate evidence.';files=$files} |
+            ConvertTo-Json -Depth 6 | Set-Content -LiteralPath artifacts/ci-validation/publish-inventory.json -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PureProject-validation-logs
+          path: artifacts/ci-validation/
+          if-no-files-found: warn

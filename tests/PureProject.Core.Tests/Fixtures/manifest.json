@@ -1,0 +1,48 @@
+{
+  "format": "PureProject.Core.Tests fixtures",
+  "captured": "2026-10-06",
+  "files": [
+    {
+      "path": "static/demo.pm",
+      "source": "static/demo.pm",
+      "bytes": 10646,
+      "sha256": "568095f548cc11adc6e4bd0d8f523fc8e3f5709b97274893709cad3b48a3e252",
+      "source_license": "MIT (repository LICENSE)"
+    },
+    {
+      "path": "static/demo2.pm",
+      "source": "static/demo2.pm",
+      "bytes": 6915,
+      "sha256": "cc05e30e9236458e64792f9267f4faa9b57ff1251d93a68c3fa95f37774d3be4",
+      "source_license": "MIT (repository LICENSE)"
+    },
+    {
+      "path": "static/demo3.pm",
+      "source": "static/demo3.pm",
+      "bytes": 7855,
+      "sha256": "a63fbfbd2494e7fa8f6522e7095224a74ffda8d5ad260395c4527f45b4d06ea1",
+      "source_license": "MIT (repository LICENSE)"
+    },
+    {
+      "path": "v1.2/static/demo.pm",
+      "source": "v1.2/static/demo.pm",
+      "bytes": 11058,
+      "sha256": "70ab3b585ff19cc466312423a1697b1e53c9fb574c1ddde1b146935ff7903933",
+      "source_license": "MIT (repository LICENSE)"
+    },
+    {
+      "path": "v1.2/static/demo2.pm",
+      "source": "v1.2/static/demo2.pm",
+      "bytes": 7200,
+      "sha256": "33ecb06bacd8eab941c8f91a63317b28cd63a609c74f3d15a759c997691b4f4f",
+      "source_license": "MIT (repository LICENSE)"
+    },
+    {
+      "path": "v1.2/static/demo3.pm",
+      "source": "v1.2/static/demo3.pm",
+      "bytes": 8168,
+      "sha256": "3187befd3b74d1dadf56749bc80801437e2b16029239e590e88dfa7aa284e90c",
+      "source_license": "MIT (repository LICENSE)"
+    }
+  ]
+}

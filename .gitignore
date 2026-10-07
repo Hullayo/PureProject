@@ -1,0 +1,23 @@
+.tools/
+.nuget/
+.dotnet-home/
+**/bin/
+**/obj/
+artifacts/
+.vs/
+*.user
+*.log
+
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.suo
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

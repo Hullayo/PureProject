@@ -1,0 +1,102 @@
+<Window x:Class="PureProject.WinUI.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="简项 · PureProject">
+ <Grid x:Name="Root" Background="{ThemeResource AppBackgroundBrush}" Loaded="Root_Loaded">
+  <Grid.RowDefinitions><RowDefinition Height="48"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <Grid x:Name="TopBar" Height="48" Background="{ThemeResource CardBackgroundBrush}">
+   <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="3"/></Grid.RowDefinitions>
+   <Grid.ColumnDefinitions><ColumnDefinition Width="252"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <StackPanel Orientation="Horizontal" Spacing="9" Margin="14,0,0,0" VerticalAlignment="Center">
+    <Image x:Name="BrandLogo" Source="ms-appx:///Assets/logo.png" Width="25" Height="25" AutomationProperties.Name="简项"/>
+    <TextBlock Text="简项" FontFamily="{ThemeResource AppFontFamily}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Foreground="{ThemeResource PrimaryTextBrush}"/>
+   </StackPanel>
+   <Grid x:Name="TitleBarDragRegion" Grid.Column="1" Background="Transparent">
+    <TextBlock x:Name="TopContext" MaxWidth="520" FontFamily="{ThemeResource AppFontFamily}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource PrimaryTextBrush}"/>
+   </Grid>
+   <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+    <Button x:Name="TopSearchButton" Width="30" Height="30" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="TopSearch_Click" ToolTipService.ToolTip="Ctrl+Shift+F 全局搜索" AutomationProperties.Name="全局搜索" VerticalAlignment="Center"/>
+    <Button x:Name="TopSettingsButton" Width="30" Height="30" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="Settings_Click" ToolTipService.ToolTip="设置" AutomationProperties.Name="设置" VerticalAlignment="Center"/>
+    <Border BorderBrush="{ThemeResource BorderBrush}" BorderThickness="1,0,0,0" Margin="6,0,0,0">
+     <StackPanel Orientation="Horizontal">
+      <Button x:Name="MinimizeButton" Width="46" Height="45" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="Minimize_Click" AutomationProperties.Name="最小化"><Canvas Width="12" Height="12"><Rectangle Canvas.Top="5" Width="12" Height="1.5" Fill="{ThemeResource SecondaryTextBrush}"/></Canvas></Button>
+      <Button x:Name="MaximizeButton" Width="46" Height="45" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="Maximize_Click" AutomationProperties.Name="最大化"><Canvas Width="12" Height="12"><Rectangle Canvas.Left="1" Canvas.Top="1" Width="10" Height="10" RadiusX="1.5" RadiusY="1.5" Stroke="{ThemeResource SecondaryTextBrush}" StrokeThickness="1.3"/></Canvas></Button>
+      <Button x:Name="WindowCloseButton" Width="46" Height="45" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="Close_Click" AutomationProperties.Name="关闭"><Canvas Width="12" Height="12"><Path Data="M1,1 L11,11 M11,1 L1,11" Stroke="{ThemeResource SecondaryTextBrush}" StrokeThickness="1.3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Canvas></Button>
+     </StackPanel>
+    </Border>
+   </StackPanel>
+   <Grid x:Name="TopBarDoubleRule" Grid.Row="1" Grid.ColumnSpan="3" Height="3" IsHitTestVisible="False">
+    <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource BorderStrongBrush}"/>
+    <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource BorderStrongBrush}"/>
+   </Grid>
+  </Grid>
+  <Grid Grid.Row="1">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="264"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border x:Name="SidebarPanel" Width="264" Background="{ThemeResource SidebarBackgroundBrush}" BorderBrush="{ThemeResource BorderStrongBrush}" BorderThickness="0,0,1,0">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="52"/><RowDefinition Height="52"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <Grid>
+      <Button x:Name="DashboardButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalAlignment="Stretch" Padding="15,0,12,0" BorderThickness="0" CornerRadius="0" Background="Transparent" Click="Dashboard_Click" AutomationProperties.Name="仪表盘"/>
+      <Grid x:Name="DashboardDoubleRule" VerticalAlignment="Bottom" Height="3" IsHitTestVisible="False">
+       <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource BorderBrush}"/>
+       <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource BorderBrush}"/>
+      </Grid>
+     </Grid>
+     <Grid Grid.Row="1" Padding="15,0,11,0">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="28"/><ColumnDefinition Width="28"/></Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center"><Image x:Name="ProjectsFolderIcon" Width="15" Height="15"/><TextBlock Text="项目列表" FontFamily="{ThemeResource AppFontFamily}" FontSize="15" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}"/></StackPanel>
+      <Button x:Name="SidebarSearchButton" Grid.Column="1" Width="26" Height="28" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="SidebarSearch_Click" ToolTipService.ToolTip="搜索项目" AutomationProperties.Name="搜索项目"/>
+      <Button x:Name="NavigationNewProjectButton" Grid.Column="2" Width="26" Height="28" MinWidth="0" Padding="0" BorderThickness="0" Background="Transparent" Click="NewProject_Click" ToolTipService.ToolTip="新建项目" AutomationProperties.Name="新建项目"/>
+      <Grid x:Name="ProjectsDoubleRule" Grid.ColumnSpan="3" VerticalAlignment="Bottom" Height="3" Margin="-15,0,-11,0" IsHitTestVisible="False">
+       <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource BorderBrush}"/>
+       <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource BorderBrush}"/>
+      </Grid>
+     </Grid>
+     <TextBox x:Name="SidebarSearchBox" Grid.Row="2" PlaceholderText="搜索项目…" Margin="12,8,12,6" Visibility="Collapsed" TextChanged="SidebarSearch_TextChanged" AutomationProperties.Name="搜索项目"/>
+     <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="SidebarProjectList" Padding="8,2,8,10"/></ScrollViewer>
+     <StackPanel Grid.Row="4">
+      <Grid x:Name="SidebarActionsDoubleRule" Height="3" IsHitTestVisible="False">
+       <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource BorderBrush}"/>
+       <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource BorderBrush}"/>
+      </Grid>
+      <Grid Margin="12,10,12,9" ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+       <Button x:Name="SidebarExportButton" Content="导出" FontSize="11" HorizontalAlignment="Stretch" Height="28" Padding="6,0" Click="Export_Click" Background="{ThemeResource SubtleBackgroundBrush}"/>
+       <Button x:Name="NavigationImportButton" Grid.Column="1" Content="导入" FontSize="11" HorizontalAlignment="Stretch" Height="28" Padding="6,0" Click="Import_Click" Background="{ThemeResource SubtleBackgroundBrush}" AutomationProperties.Name="导入项目 / 备份"/>
+      </Grid>
+      <Button x:Name="FlowchartButton" Content="◇  流程图" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" FontSize="13" Height="38" Margin="12,0,12,12" Padding="12,0" Background="{ThemeResource CardBackgroundBrush}" Foreground="{ThemeResource AccentBrush}" Click="Flowchart_Click" ToolTipService.ToolTip="查看流程图迁移状态"/>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <Grid x:Name="MainPane" Grid.Column="1">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <Grid x:Name="ProjectToolbar" Height="47" Background="{ThemeResource CardBackgroundBrush}" Visibility="Collapsed">
+     <StackPanel x:Name="ViewTabsHost" Orientation="Horizontal" Margin="22,0,0,3"/>
+     <Grid x:Name="ViewTabsDoubleRule" VerticalAlignment="Bottom" Height="3" IsHitTestVisible="False">
+      <Border Height="1" VerticalAlignment="Top" Background="{ThemeResource BorderBrush}"/>
+      <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource BorderBrush}"/>
+     </Grid>
+    </Grid>
+    <InfoBar x:Name="Notice" Grid.Row="1" IsOpen="False" IsClosable="True"/>
+    <Grid x:Name="ContentHost" Grid.Row="2"/>
+   </Grid>
+  </Grid>
+  <Border x:Name="OperationStatus" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20"
+   Padding="14,10" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource BorderBrush}"
+   BorderThickness="1" CornerRadius="4" Visibility="Collapsed" IsHitTestVisible="False">
+   <StackPanel Spacing="8" MinWidth="180"><TextBlock x:Name="OperationStatusText" FontFamily="{ThemeResource AppFontFamily}" FontSize="12" Foreground="{ThemeResource SecondaryTextBrush}"/><ProgressBar IsIndeterminate="True" Height="3" Foreground="{ThemeResource AccentBrush}" Background="{ThemeResource SubtleBackgroundBrush}"/></StackPanel>
+  </Border>
+  <!-- Keep save/sync announcements available to assistive technology without
+       rendering an operation log or reserving any space in the brand header. -->
+  <TextBlock x:Name="SaveState" Grid.Row="1" Width="1" Height="1" Opacity="0" IsHitTestVisible="False"
+   HorizontalAlignment="Right" VerticalAlignment="Bottom" AutomationProperties.Name="保存状态"
+   AutomationProperties.AccessibilityView="Content" AutomationProperties.LiveSetting="Polite"/>
+  <Grid Visibility="Collapsed">
+   <AutoSuggestBox x:Name="SearchBox" TextChanged="Search_TextChanged"/>
+   <ComboBox x:Name="GroupSelector" DisplayMemberPath="Name" SelectionChanged="Group_SelectionChanged"/>
+   <ComboBox x:Name="ViewSelector" SelectionChanged="View_SelectionChanged"><ComboBoxItem Content="看板"/><ComboBoxItem Content="列表"/><ComboBoxItem Content="日历"/><ComboBoxItem Content="时间线"/><ComboBoxItem Content="依赖图"/></ComboBox>
+   <ComboBox x:Name="PrioritySelector" SelectedIndex="0" SelectionChanged="Filter_SelectionChanged"><ComboBoxItem Content="所有优先级"/><ComboBoxItem Content="高优先级"/><ComboBoxItem Content="中优先级"/><ComboBoxItem Content="低优先级"/></ComboBox>
+   <TextBlock x:Name="PageTitle"/><TextBlock x:Name="PageSubtitle"/>
+   <Button x:Name="UndoButton" Click="Undo_Click"/><Button x:Name="RedoButton" Click="Redo_Click"/>
+  </Grid>
+ </Grid>
+</Window>
