@@ -38,27 +38,32 @@ public sealed partial class MainWindow
         private readonly StackPanel _actions;
         private readonly bool _compact;
         private readonly double _minimumHeight;
+        private readonly TextFieldKind _kind;
+        private readonly string _header;
         private int _page;
         private string _displayed = "";
         private int? _editSelectionStart;
         private int _editSelectionLength;
         private Windows.System.VirtualKey? _pendingDeleteKey;
         private bool _loading;
+        private bool _composing;
         public StackPanel Panel { get; }
         public TextBox Input { get; }
         public string Value => _buffer.Value;
         public event Action? Changed;
 
         public void Clear()
-        { _buffer = new PagedTextBuffer(""); _page = 0; LoadPage(); Changed?.Invoke(); }
+        { _buffer = new PagedTextBuffer("", inputKind: _kind); _page = 0; LoadPage(); Changed?.Invoke(); }
 
-        public LongTextEditor(MainWindow owner, string header, string value, double minimumHeight = 96, bool compact = false)
+        public LongTextEditor(MainWindow owner, string header, string value, double minimumHeight = 96, bool compact = false, TextFieldKind kind = TextFieldKind.LongText)
         {
             _compact = compact;
             _minimumHeight = minimumHeight;
-            _buffer = new PagedTextBuffer(value);
+            _kind = kind; _header = header;
+            _buffer = new PagedTextBuffer(value, inputKind: kind);
             Input = new TextBox { Header = compact ? null : header, AcceptsReturn = !compact, TextWrapping = compact ? TextWrapping.NoWrap : TextWrapping.Wrap,
-                MinHeight = minimumHeight, MaxHeight = Math.Max(minimumHeight, 176), MaxLength = 200000 };
+                MinHeight = minimumHeight, MaxHeight = Math.Max(minimumHeight, 176), MaxLength = 0 };
+            TrackTextComposition(Input);
             ScrollViewer.SetVerticalScrollBarVisibility(Input, ScrollBarVisibility.Auto);
             Panel = Column(5); Panel.Children.Add(Input);
             _position = EditorText("", 11, "MutedTextBrush");
@@ -72,11 +77,11 @@ public sealed partial class MainWindow
             Panel.Children.Add(_position); Panel.Children.Add(_actions); Panel.Children.Add(_feedback);
             AutomationProperties.SetName(_previous, header + "上一段"); AutomationProperties.SetName(_next, header + "下一段");
             AutomationProperties.SetName(append, header + "插入新段");
-            AutomationProperties.SetHelpText(Input, "长文本分段编辑。切换段落会保留修改，保存时合并全文，取消则放弃全部修改。");
+            AutomationProperties.SetHelpText(Input, $"{header}最多 {TextRules.GetLimit(kind)} 个字符。已有长内容保留原文，修改后需符合上限。");
             Input.KeyDown += (_, args) => _pendingDeleteKey = args.Key is Windows.System.VirtualKey.Back or Windows.System.VirtualKey.Delete ? args.Key : null;
             Input.BeforeTextChanging += (_, args) =>
             {
-                if (_loading) return;
+                if (_loading || _composing) return;
                 _editSelectionStart = Input.SelectionStart; _editSelectionLength = Input.SelectionLength;
                 // A collapsed selection alone cannot distinguish which adjacent
                 // mixed newline Backspace/Delete removes. Capture that range;
@@ -100,17 +105,22 @@ public sealed partial class MainWindow
                     }
                 }
                 _pendingDeleteKey = null;
-                if (args.NewText.Length > _buffer.PageSize || _buffer.Length - _buffer.GetPage(_page).Length + args.NewText.Length > _buffer.MaximumLength)
+                if (!_buffer.CanReplacePage(_page, args.NewText))
                 {
                     args.Cancel = true;
-                    Feedback("本段已满，请插入新段继续。粘贴长文本会自动分段；全文最多 200,000 个文本单位。");
+                    Feedback($"{header}最多 {TextRules.GetLimit(kind)} 个字符，超出内容未输入。");
+                }
+                else if (args.NewText.Length > _buffer.PageSize)
+                {
+                    args.Cancel = true;
+                    Feedback("本段已满，请切换到下一段；字数上限按全文计算。");
                 }
             };
             // TextChanging is synchronous with the native text update. TextChanged
             // may arrive after a submit command and would leave the backing draft stale.
-            Input.TextChanging += (_, _) =>
+            void ApplyDisplayedEdit()
             {
-                if (_loading || string.Equals(Input.Text, _displayed, StringComparison.Ordinal)) return;
+                if (_loading || _composing || string.Equals(Input.Text, _displayed, StringComparison.Ordinal)) return;
                 try { _buffer.EditDisplayedPage(_page, _displayed, Input.Text, _editSelectionStart, _editSelectionLength); }
                 catch (ArgumentException ex) { LoadPage(); Feedback(ex.Message); return; }
                 catch (InvalidOperationException ex) { LoadPage(); Feedback(ex.Message); return; }
@@ -118,10 +128,21 @@ public sealed partial class MainWindow
                 if (!_buffer.MatchesDisplayedPage(_page, Input.Text))
                 { var caret = Input.SelectionStart; LoadPage(); Input.Select(Math.Min(caret, Input.Text.Length), 0); }
                 _feedback.Visibility = Visibility.Collapsed; UpdatePosition(); Changed?.Invoke();
+            }
+            Input.TextChanging += (_, _) => ApplyDisplayedEdit();
+            // Do not count the temporary Latin spelling while an IME is composing.
+            // Only the committed text enters the draft buffer; rejection restores it.
+            Input.TextCompositionStarted += (_, _) =>
+            {
+                _composing = true;
+                _editSelectionStart = Input.SelectionStart; _editSelectionLength = Input.SelectionLength;
+                _pendingDeleteKey = null;
             };
+            Input.TextCompositionEnded += (_, _) => { _composing = false; ApplyDisplayedEdit(); };
             Input.Paste += async (_, args) =>
             {
                 args.Handled = true;
+                if (_composing) { Feedback("请先完成当前输入，再粘贴。"); return; }
                 var page = _page; var start = Input.SelectionStart; var length = Input.SelectionLength;
                 var original = _buffer.GetPage(page);
                 try
@@ -131,13 +152,20 @@ public sealed partial class MainWindow
                     var pasted = await clipboard.GetTextAsync();
                     if (page != _page || !string.Equals(original, _buffer.GetPage(page), StringComparison.Ordinal))
                     { Feedback("粘贴期间内容发生变化，请重新粘贴。"); return; }
-                    _buffer.PasteIntoDisplayedPage(page, Input.Text, start, length, pasted);
-                    LoadPage(); Changed?.Invoke();
-                    if (pasted.Length > _buffer.PageSize) Feedback("已粘贴全部内容，并自动分段。", false);
+                    PasteText(start, length, pasted);
                 }
                 catch (Exception ex) { Feedback("无法粘贴：" + ex.Message); }
             };
             LoadPage();
+        }
+
+        // Shared by the native clipboard event and the in-process regression harness.
+        // The buffer validates the complete field before changing any page.
+        public void PasteText(int start, int length, string pasted)
+        {
+            _buffer.PasteIntoDisplayedPage(_page, Input.Text, start, length, pasted);
+            LoadPage(); Changed?.Invoke();
+            if (pasted.Length > _buffer.PageSize) Feedback("已粘贴全部内容，并自动分段。", false);
         }
 
         private void Feedback(string message, bool error = true)
@@ -170,9 +198,15 @@ public sealed partial class MainWindow
 
         private void UpdatePosition()
         {
-            _position.Text = _buffer.Count > 1 ? $"第 {_page + 1} / {_buffer.Count} 段 · 保存时保留全文" : "长文本可继续分段输入或直接粘贴";
+            var count = TextRules.CountGraphemes(_buffer.Value);
+            var limit = TextRules.GetLimit(_kind);
+            _position.Text = $"{count} / {limit} 字"
+                + (_buffer.Count > 1 ? $" · 第 {_page + 1} / {_buffer.Count} 段" : "")
+                + (count > limit ? $" · 原文可保留，修改后请缩减到 {limit} 字以内。" : "");
             _previous.IsEnabled = _page > 0; _next.IsEnabled = _page + 1 < _buffer.Count;
-            _position.Visibility = _actions.Visibility = _buffer.Count == 1 && _buffer.Length < _buffer.PageSize ? Visibility.Collapsed : Visibility.Visible;
+            _position.Visibility = Visibility.Visible;
+            _actions.Visibility = _buffer.Count == 1 && _buffer.Length < _buffer.PageSize ? Visibility.Collapsed : Visibility.Visible;
+            AutomationProperties.SetHelpText(Input, $"{_header}最多 {limit} 个字符。" + _position.Text);
         }
     }
 }

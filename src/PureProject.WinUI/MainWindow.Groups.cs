@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using PureProject.Core;
 
 namespace PureProject.WinUI;
 
@@ -9,8 +10,9 @@ public sealed partial class MainWindow
     private async Task CreateTaskGroupAsync(string projectId)
     {
         if (!_ready || _busy || _dialogOpen || !_projects.Any(project => project.Id == projectId)) return;
-        var name = new TextBox { Header = "任务组名称", PlaceholderText = "输入任务组名称", MaxLength = 500,
+        var name = new TextBox { Header = "任务组名称", PlaceholderText = "输入任务组名称",
             HorizontalAlignment = HorizontalAlignment.Stretch, MinWidth = 0 };
+        ConfigureTextInput(name, TextFieldKind.Title, "任务组名称");
         AutomationProperties.SetAutomationId(name, "TaskGroupName");
         AutomationProperties.SetName(name, "任务组名称");
         AutomationProperties.SetIsRequiredForForm(name, true);
@@ -30,15 +32,10 @@ public sealed partial class MainWindow
             validation.Clear();
             try
             {
-                if (string.IsNullOrWhiteSpace(name.Text))
-                {
-                    args.Cancel = true;
-                    validation.Show("请填写任务组名称。", name);
-                    return;
-                }
+                var savedName = TextRules.RequireTitle(name.Text, "任务组名称");
                 name.IsEnabled = false; dialog.IsPrimaryButtonEnabled = false;
                 string? nextId = null;
-                await ChangeAsync(projectId, project => nextId = _service.CreateTaskGroup(project, name.Text.Trim()).Id, "任务组已创建");
+                await ChangeAsync(projectId, project => nextId = _service.CreateTaskGroup(project, savedName).Id, "任务组已创建");
                 createdId = nextId;
                 _selectedId = projectId; _groupId = createdId; _view = 0;
             }

@@ -351,7 +351,7 @@ public sealed partial class MainWindow
             button.BorderThickness = new Thickness(3, 0, 0, 0); button.BorderBrush = g.Id == p.DefaultTaskGroupId ? ThemeBrush("SuccessBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent); button.Background = g.Id == group.Id ? ThemeBrush("AccentLightBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             button.Foreground = ThemeBrush(g.Id == group.Id ? "AccentTextBrush" : "SecondaryTextBrush"); if (g.Id == group.Id) PreserveButtonPalette(button); button.FontSize = 12; button.IsEnabled = !g.Archived; ViewIdentity(button, "KanbanGroup:" + g.Id, g.Name + (g.Archived ? "，已归档" : "")); Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(button, g.Id == group.Id ? "已选中" : "未选中"); ToolTipService.SetToolTip(button, g.Archived ? g.Name + " · 请先恢复任务组" : g.Name); row.Children.Add(button);
             var more = ViewIcon("\uE712", $"管理任务组 {g.Name}"); ViewIdentity(more, "TaskGroupMore:" + g.Id); var menu = ViewMenu();
-            AddMenu(menu, "重命名", async () => { var name = await PromptAsync("重命名任务组", g.Name); if (name is not null) await ChangeAsync(p.Id, draft => _service.RenameTaskGroup(draft, g.Id, name)); }, "TaskGroupMenu:rename:" + g.Id);
+            AddMenu(menu, "重命名", async () => { var name = await PromptAsync("重命名任务组", g.Name, value => TextRules.RequireTitle(value, "任务组名称", g.Name)); if (name is not null) await ChangeAsync(p.Id, draft => _service.RenameTaskGroup(draft, g.Id, name)); }, "TaskGroupMenu:rename:" + g.Id);
             if (!g.Archived)
             {
                 AddMenu(menu, g.Id == p.DefaultTaskGroupId ? "当前默认任务组" : "设为默认任务组", () => ChangeAsync(p.Id, draft => _service.SetDefaultTaskGroup(draft, g.Id)), "TaskGroupMenu:default:" + g.Id, g.Id != p.DefaultTaskGroupId);
@@ -391,7 +391,7 @@ public sealed partial class MainWindow
         groupPanel.KeyDown += HandleDrawerKeys; scrim.KeyDown += HandleDrawerKeys;
         leading.Children.Add(groupToggle); leading.Children.Add(ViewDot(ColorBrush(p.Color))); header.Children.Add(leading);
         var heading = ViewText(group.Name + (group.Archived ? " · 已归档" : ""), 14, bold: true); Grid.SetColumn(heading, 1); header.Children.Add(heading);
-        var newStatus = ViewButton("新建状态", async () => { var name = await PromptAsync("新增状态"); if (name is not null) await ChangeAsync(p.Id, draft => _service.CreateTaskStatus(draft, group.Id, name)); }); ViewIdentity(newStatus, "TaskStatusCreate", "新建状态"); newStatus.IsEnabled = !group.Archived; Grid.SetColumn(newStatus, 2); header.Children.Add(newStatus); boardArea.Children.Add(ViewBorder(header, border: new Thickness(0, 0, 0, 1)));
+        var newStatus = ViewButton("新建状态", async () => { var name = await PromptAsync("新增状态", validate: value => TextRules.RequireStatusName(value), kind: TextFieldKind.Status); if (name is not null) await ChangeAsync(p.Id, draft => _service.CreateTaskStatus(draft, group.Id, name)); }); ViewIdentity(newStatus, "TaskStatusCreate", "新建状态"); newStatus.IsEnabled = !group.Archived; Grid.SetColumn(newStatus, 2); header.Children.Add(newStatus); boardArea.Children.Add(ViewBorder(header, border: new Thickness(0, 0, 0, 1)));
         var board = new Grid { ColumnSpacing = 12, Padding = new Thickness(14) }; var statuses = group.Statuses.OrderBy(s => s.SortOrder).ToList();
         for (var i = 0; i < statuses.Count; i++)
         {
@@ -399,7 +399,7 @@ public sealed partial class MainWindow
             column.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) }); column.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); column.RowDefinitions.Add(new RowDefinition());
             var colHeader = new Grid { ColumnSpacing = 8, Padding = new Thickness(10, 0, 6, 0) }; colHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); colHeader.ColumnDefinitions.Add(new ColumnDefinition()); colHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             colHeader.Children.Add(ViewDot(ColorBrush(status.Color))); var name = ViewText(status.Name, 12, bold: true); Grid.SetColumn(name, 1); colHeader.Children.Add(name);
-            async Task RenameStatus() { var renamed = await PromptAsync("重命名状态", status.Name); if (renamed is not null) await ChangeAsync(p.Id, draft => _service.UpdateTaskStatusDefinition(draft, group.Id, status.Id, renamed, status.Color, status.Category)); }
+            async Task RenameStatus() { var renamed = await PromptAsync("重命名状态", status.Name, value => TextRules.RequireStatusName(value, status.Name), kind: TextFieldKind.Status); if (renamed is not null) await ChangeAsync(p.Id, draft => _service.UpdateTaskStatusDefinition(draft, group.Id, status.Id, renamed, status.Color, status.Category)); }
             name.DoubleTapped += async (_, _) => await GuardAsync(RenameStatus); var more = ViewIcon("\uE712", $"管理状态 {status.Name}"); ViewIdentity(more, "TaskStatusMore:" + status.Id); var menu = ViewMenu(); AddMenu(menu, "重命名", RenameStatus, "TaskStatusMenu:rename:" + status.Id);
             AddMenu(menu, status.Id == group.CompletionStatusId ? "当前完成列" : "设为完成列", () => ChangeAsync(p.Id, draft => _service.SetGroupCompletionStatus(draft, group.Id, status.Id)), "TaskStatusMenu:complete:" + status.Id, status.Id != group.CompletionStatusId);
             AddMenu(menu, "复制状态任务", async () =>
@@ -443,10 +443,11 @@ public sealed partial class MainWindow
             Grid.SetColumn(selector, 1); row.Children.Add(selector); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); actionColumn = 2;
         }
         var input = new TextBox { PlaceholderText = labeled ? "添加任务" : "添加新任务...", FontFamily = UiFont, FontSize = 12, MinHeight = labeled ? 34 : 31, Height = labeled ? 34 : 31, Padding = new Thickness(8, 4, 8, 4), CornerRadius = new CornerRadius(0), Background = ThemeBrush("CardBackgroundBrush"), BorderBrush = ThemeBrush("BorderBrush") };
-        var inputId = $"TaskQuickAdd:{groupId ?? "all"}:{statusId ?? "default"}"; ViewIdentity(input, inputId, "添加任务标题", "最多 128 个可见字符；输入后按 Enter 添加任务");
+        var inputId = $"TaskQuickAdd:{groupId ?? "all"}:{statusId ?? "default"}"; ViewIdentity(input, inputId, "添加任务标题", "最多 64 个可见字符；输入后按 Enter 添加任务");
         row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var feedback = ViewText("", 10, "MutedTextBrush"); feedback.TextWrapping = TextWrapping.Wrap; feedback.Margin = new Thickness(1, 3, 0, 0);
         feedback.Visibility = Visibility.Collapsed; ViewIdentity(feedback, inputId + ":Feedback", "标题长度与校验提示"); Grid.SetRow(feedback, 1); Grid.SetColumnSpan(feedback, actionColumn + 1); row.Children.Add(feedback);
+        ConfigureTextInput(input, TextFieldKind.Title, "任务标题", feedback);
         var saving = false; var composing = false; Button? add = null;
         bool CanCreate() => !saving && !string.IsNullOrWhiteSpace(input.Text) && p.TaskGroups.Any(g => g.Id == (creationGroupId ?? p.DefaultTaskGroupId) && !g.Archived);
         void RefreshAddState()
@@ -454,20 +455,7 @@ public sealed partial class MainWindow
             input.IsEnabled = !saving && p.TaskGroups.Any(g => g.Id == (creationGroupId ?? p.DefaultTaskGroupId) && !g.Archived);
             if (creationGroupSelector is not null) creationGroupSelector.IsEnabled = !saving;
             if (add is not null) add.IsEnabled = CanCreate();
-            if (composing) return;
-            var text = input.Text ?? ""; var count = TextRules.CountGraphemes(text.Trim());
-            feedback.Visibility = text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-            try
-            {
-                if (text.Length > 0) TextRules.RequireTaskTitle(text);
-                feedback.Text = $"{count} / {TextRules.TaskTitleGraphemeLimit} 个可见字符";
-                feedback.Foreground = ThemeBrush("MutedTextBrush");
-            }
-            catch (ArgumentException error)
-            {
-                feedback.Text = error.Message; feedback.Foreground = ThemeBrush("DangerTextBrush");
-                if (add is not null) add.IsEnabled = false;
-            }
+            if (composing && add is not null) add.IsEnabled = false;
         }
         async Task Create()
         {
@@ -491,7 +479,7 @@ public sealed partial class MainWindow
         }
         input.TextCompositionStarted += (_, _) => composing = true;
         input.TextCompositionEnded += (_, _) => { composing = false; RefreshAddState(); };
-        input.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !composing) { args.Handled = true; await GuardAsync(Create); } }; row.Children.Add(input);
+        input.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !composing && !IsTextComposing(input)) { args.Handled = true; await GuardAsync(Create); } }; row.Children.Add(input);
         add = labeled ? ViewButton("添加", Create, true, 34) : ViewIcon("\uE710", "添加任务", Create, 30); ViewIdentity(add, inputId + ":Submit"); Grid.SetColumn(add, actionColumn); row.Children.Add(add);
         input.TextChanged += (_, _) => RefreshAddState(); if (creationGroupSelector is not null) creationGroupSelector.SelectionChanged += (_, _) => RefreshAddState(); RefreshAddState(); return row;
     }
@@ -821,10 +809,13 @@ public sealed partial class MainWindow
             }, 22); ViewIdentity(remove, "MilestoneDelete:" + milestone.Id, "删除里程碑：" + milestone.Title); chip.Children.Add(remove);
             var outline = ViewBorder(chip); outline.BorderBrush = ColorBrush(milestone.Color); milestoneBar.Children.Add(outline);
         }
-        var milestoneTitle = new TextBox { PlaceholderText = "里程碑名称", MaxLength = 500, FontFamily = UiFont, Width = 146, Height = 28, MinHeight = 28, FontSize = 11, Padding = new Thickness(7, 3, 7, 3), CornerRadius = new CornerRadius(2), Background = ThemeBrush("CardBackgroundBrush") };
+        var milestoneTitle = new TextBox { PlaceholderText = "里程碑名称", FontFamily = UiFont, Width = 146, Height = 28, MinHeight = 28, FontSize = 11, Padding = new Thickness(7, 3, 7, 3), CornerRadius = new CornerRadius(2), Background = ThemeBrush("CardBackgroundBrush") };
+        var milestoneFeedback = ViewText("", 10, "MutedTextBrush"); milestoneFeedback.TextWrapping = TextWrapping.Wrap; milestoneFeedback.MaxWidth = 146;
+        ConfigureTextInput(milestoneTitle, TextFieldKind.Title, "里程碑名称", milestoneFeedback);
+        var milestoneNameField = Column(3); milestoneNameField.Children.Add(milestoneTitle); milestoneNameField.Children.Add(milestoneFeedback);
         var milestoneDate = new CalendarDatePicker { PlaceholderText = "年/月/日", FontFamily = UiFont, Width = 110, Height = 28, MinHeight = 28, FontSize = 11, Padding = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(2), Background = ThemeBrush("CardBackgroundBrush") };
         ViewIdentity(milestoneTitle, "MilestoneQuickAddTitle", "里程碑名称"); ViewIdentity(milestoneDate, "MilestoneQuickAddDate", "里程碑日期");
-        milestoneBar.Children.Add(milestoneTitle); milestoneBar.Children.Add(milestoneDate);
+        milestoneBar.Children.Add(milestoneNameField); milestoneBar.Children.Add(milestoneDate);
         var savingMilestone = false; Button? addMilestone = null;
         bool CanCreateMilestone() => !savingMilestone && !string.IsNullOrWhiteSpace(milestoneTitle.Text) && milestoneDate.Date.HasValue;
         void RefreshMilestoneState()
@@ -835,13 +826,13 @@ public sealed partial class MainWindow
         async Task CreateMilestone()
         {
             if (_busy || !CanCreateMilestone() || milestoneDate.Date is not { } date) return;
-            var title = milestoneTitle.Text.Trim(); var saved = false; savingMilestone = true; RefreshMilestoneState();
+            var title = TextRules.RequireTitle(milestoneTitle.Text, "里程碑名称"); var saved = false; savingMilestone = true; RefreshMilestoneState();
             try { await ChangeAsync(p.Id, draft => draft.Milestones.Add(new Milestone { Id = Guid.NewGuid().ToString(), Title = title, Date = date.ToString("yyyy-MM-dd"), Color = "#9f352f" })); saved = true; }
             finally { savingMilestone = false; RefreshMilestoneState(); if (saved) FocusUiElement("MilestoneQuickAddTitle"); }
         }
         addMilestone = ViewButton("添加", CreateMilestone, true, 28); ViewIdentity(addMilestone, "MilestoneQuickAddSubmit", "添加里程碑"); milestoneBar.Children.Add(addMilestone);
         milestoneTitle.TextChanged += (_, _) => RefreshMilestoneState(); milestoneDate.DateChanged += (_, _) => RefreshMilestoneState();
-        milestoneTitle.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter) { args.Handled = true; await GuardAsync(CreateMilestone); } }; RefreshMilestoneState();
+        milestoneTitle.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !IsTextComposing(milestoneTitle)) { args.Handled = true; await GuardAsync(CreateMilestone); } }; RefreshMilestoneState();
         var milestoneScroll = new ScrollViewer { Content = milestoneBar, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollMode = ScrollMode.Enabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled }; var milestoneBorder = ViewBorder(milestoneScroll, "AppBackgroundBrush", border: new Thickness(0, 0, 0, 1)); Grid.SetRow(milestoneBorder, 1); layout.Children.Add(milestoneBorder);
         var today = DateOnly.FromDateTime(DateTime.Today); DateOnly Created(ProjectTask t) => DateTimeOffset.TryParse(t.CreatedAt, out var date) ? DateOnly.FromDateTime(date.LocalDateTime) : today;
         var origin = tasks.Count > 0 ? tasks.Min(Created) : today; var computed = new Dictionary<string, (double Start, double Duration)>();

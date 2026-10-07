@@ -12,10 +12,18 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
 
     public Project CreateProject(string name, string description = "", string color = "#4f46e5")
     {
-        var project = new Project { Id = NewId(), Name = TextRules.RequireProjectName(name), Description = description, Color = color, CreatedAt = Now, UpdatedAt = Now };
+        var project = new Project { Id = NewId(), Name = TextRules.RequireProjectName(name), Description = TextRules.RequireLongText(description, "项目说明"), Color = color, CreatedAt = Now, UpdatedAt = Now };
         var group = PmSerializer.CreateLegacyGroup(project.Id);
         project.TaskGroups.Add(group); project.DefaultTaskGroupId = group.Id;
         return project;
+    }
+
+    public void UpdateProject(Project project, string name, string description, string color)
+    {
+        var savedName = TextRules.RequireProjectName(name, project.Name);
+        var savedDescription = TextRules.RequireLongText(description, "项目说明", project.Description);
+        project.Name = savedName; project.Description = savedDescription; project.Color = color;
+        Touch(project);
     }
 
     public ProjectTask CreateTask(Project project, string title, string? groupId = null, string? statusId = null)
@@ -56,6 +64,32 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
         var clone = project.CopyForTaskEdit();
         var edited = PmSerializer.CloneTask(replacement);
         edited.Title = TextRules.RequireTaskTitle(edited.Title, existing?.Title);
+        edited.Description = TextRules.RequireLongText(edited.Description, "任务说明", existing?.Description);
+        // Validate only edited content. Untouched legacy text remains exact, including
+        // imported values that exceed the current business input limits.
+        if (edited.Subtasks is null || edited.Comments is null || edited.Tags is null ||
+            edited.Subtasks.Any(item => item is null) || edited.Comments.Any(item => item is null))
+            throw new ArgumentException("任务数组不能为 null，且不能包含 null。");
+        var originalSubtasks = existing?.Subtasks.ToLookup(item => item.Id, StringComparer.Ordinal);
+        foreach (var subtask in edited.Subtasks)
+        {
+            var originals = originalSubtasks?[subtask.Id];
+            var original = originals?.FirstOrDefault(item => string.Equals(item.Title, subtask.Title, StringComparison.Ordinal))
+                ?? originals?.FirstOrDefault();
+            subtask.Title = TextRules.RequireTitle(subtask.Title, "子任务标题", original?.Title);
+        }
+        var originalComments = existing?.Comments.ToLookup(item => item.Id, StringComparer.Ordinal);
+        foreach (var comment in edited.Comments)
+        {
+            var originals = originalComments?[comment.Id];
+            var original = originals?.FirstOrDefault(item => string.Equals(item.Content, comment.Content, StringComparison.Ordinal))
+                ?? originals?.FirstOrDefault();
+            comment.Content = TextRules.RequireLongText(comment.Content, "评论内容", original?.Content,
+                required: original is null || comment.Content != original.Content);
+        }
+        var originalTags = existing?.Tags.ToHashSet(StringComparer.Ordinal);
+        edited.Tags = edited.Tags.Select(tag => TextRules.Require(tag, TextFieldKind.Title, "标签名称",
+            originalTags?.Contains(tag) == true ? tag : null, required: originalTags?.Contains(tag) != true)).ToList();
         edited.CompletedAt = targetStatus.Category == "done" ? (previousStatus?.Category == "done" ? existing!.CompletedAt ?? Now : Now) : null;
         edited.StatusBeforeClosedId = existing?.TaskGroupId == targetGroup.Id ? existing.StatusBeforeClosedId : null;
         if (existing?.TaskGroupId == targetGroup.Id && previousStatus?.Category is not "done" and not "cancelled" && targetStatus.Category is "done" or "cancelled") edited.StatusBeforeClosedId = existing.StatusId;
@@ -185,10 +219,14 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
     public TaskGroup CreateTaskGroup(Project project, string name)
     {
         var group = PmSerializer.CreateLegacyGroup(NewId());
-        group.Name = Name(name); group.SortOrder = project.TaskGroups.Select(g => g.SortOrder).DefaultIfEmpty().Max() + 1024;
+        group.Name = TextRules.RequireTitle(name, "任务组名称", utf16Limit: 500); group.SortOrder = project.TaskGroups.Select(g => g.SortOrder).DefaultIfEmpty().Max() + 1024;
         project.TaskGroups.Add(group); Touch(project); return group;
     }
-    public void RenameTaskGroup(Project project, string groupId, string name) { Group(project, groupId).Name = Name(name); Touch(project); }
+    public void RenameTaskGroup(Project project, string groupId, string name)
+    {
+        var group = Group(project, groupId);
+        group.Name = TextRules.RequireTitle(name, "任务组名称", group.Name, utf16Limit: 500); Touch(project);
+    }
     public void SetDefaultTaskGroup(Project project, string groupId)
     {
         if (Group(project, groupId).Archived) throw new InvalidOperationException("默认任务组不能已归档");
@@ -224,13 +262,14 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
     public TaskStatusDefinition CreateTaskStatus(Project project, string groupId, string name, string category = "active")
     {
         CheckCategory(category); var group = Group(project, groupId);
-        var status = new TaskStatusDefinition { Id = NewId(), Name = Name(name), Category = category, Color = PmSerializer.CategoryColor(category), SortOrder = group.Statuses.Select(s => s.SortOrder).DefaultIfEmpty().Max() + 1024 };
+        var status = new TaskStatusDefinition { Id = NewId(), Name = TextRules.RequireStatusName(name), Category = category, Color = PmSerializer.CategoryColor(category), SortOrder = group.Statuses.Select(s => s.SortOrder).DefaultIfEmpty().Max() + 1024 };
         group.Statuses.Add(status); Touch(project); return status;
     }
     public void UpdateTaskStatusDefinition(Project project, string groupId, string statusId, string name, string color, string category)
     {
-        CheckCategory(category); name = Name(name);
+        CheckCategory(category);
         var group = Group(project, groupId); var status = Status(group, statusId);
+        name = TextRules.RequireStatusName(name, status.Name);
         if (group.CompletionStatusId == statusId && category != "done") throw new InvalidOperationException("完成列必须保留 done 类别");
         status.Name = name; status.Color = color;
         if (status.Category != category)
@@ -308,11 +347,30 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
     public TaskGroup? GetTaskGroup(Project project, ProjectTask task) => project.TaskGroups.FirstOrDefault(g => g.Id == task.TaskGroupId);
 
     public Subtask AddSubtask(Project project, string taskId, string title)
-    { var task = Task(project, taskId); var item = new Subtask { Id = NewId(), Title = Name(title) }; task.Subtasks.Add(item); task.UpdatedAt = Now; Touch(project); return item; }
+    { var task = Task(project, taskId); var item = new Subtask { Id = NewId(), Title = TextRules.RequireTitle(title, "子任务标题") }; task.Subtasks.Add(item); task.UpdatedAt = Now; Touch(project); return item; }
     public void ToggleSubtask(Project project, string taskId, string subtaskId)
     { var task = Task(project, taskId); var item = task.Subtasks.FirstOrDefault(s => s.Id == subtaskId) ?? throw new InvalidOperationException("子任务不存在"); item.Done = !item.Done; task.UpdatedAt = Now; Touch(project); }
     public TaskComment AddComment(Project project, string taskId, string content)
-    { var task = Task(project, taskId); var item = new TaskComment { Id = NewId(), Content = Name(content), CreatedAt = Now }; task.Comments.Add(item); task.UpdatedAt = Now; Touch(project); return item; }
+    { var task = Task(project, taskId); var item = new TaskComment { Id = NewId(), Content = TextRules.RequireLongText(content, "评论内容", required: true), CreatedAt = Now }; task.Comments.Add(item); task.UpdatedAt = Now; Touch(project); return item; }
+
+    public Tag CreateTag(Project project, string name, string? color = null)
+    {
+        var tag = new Tag { Id = NewId(), Name = TextRules.RequireTitle(name, "标签名称"), Color = color ?? project.Color };
+        project.Tags.Add(tag); Touch(project); return tag;
+    }
+    public void RenameTag(Project project, string tagId, string name)
+    {
+        var tag = project.Tags.FirstOrDefault(item => item.Id == tagId) ?? throw new InvalidOperationException("标签不存在");
+        var savedName = TextRules.RequireTitle(name, "标签名称", tag.Name);
+        var previousName = tag.Name;
+        tag.Name = savedName;
+        foreach (var task in project.Tasks.Where(task => task.Tags.Contains(previousName, StringComparer.Ordinal)))
+        {
+            task.Tags = task.Tags.Select(value => value == previousName ? savedName : value).Distinct(StringComparer.Ordinal).ToList();
+            task.UpdatedAt = Now;
+        }
+        Touch(project);
+    }
     public void StartTracking(Project project, string taskId)
     { var task = Task(project, taskId); if (IsClosed(project, task)) throw new InvalidOperationException("已关闭任务不能开始计时"); task.TrackedStart ??= Now; task.UpdatedAt = Now; Touch(project); }
     public TimeSpan GetTrackedDuration(Project project, ProjectTask task)
@@ -338,7 +396,6 @@ public sealed class ProjectService(TimeProvider? timeProvider = null)
     private static TaskGroup Group(Project project, string id) => project.TaskGroups.FirstOrDefault(g => g.Id == id) ?? throw new InvalidOperationException("任务组不存在");
     private static ProjectTask Task(Project project, string id) => project.Tasks.FirstOrDefault(t => t.Id == id) ?? throw new InvalidOperationException("任务不存在");
     private static TaskStatusDefinition Status(TaskGroup group, string id) => group.Statuses.FirstOrDefault(s => s.Id == id) ?? throw new InvalidOperationException("状态不属于任务组");
-    private static string Name(string text) => string.IsNullOrWhiteSpace(text) ? throw new ArgumentException("名称或内容不能为空") : text.Trim();
     private void Touch(Project project) => project.UpdatedAt = Now;
     private static void CheckCategory(string category) { if (category is not "todo" and not "active" and not "done" and not "cancelled") throw new ArgumentException("无效的状态类别"); }
     private static void CheckOrder(IEnumerable<string> knownIds, IReadOnlyList<string> ids)

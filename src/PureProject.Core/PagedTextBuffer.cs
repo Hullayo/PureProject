@@ -7,6 +7,7 @@ public sealed class PagedTextBuffer
 {
     public const int DefaultPageSize = 4096;
     private readonly string _original;
+    private readonly TextFieldKind? _inputKind;
     private readonly List<string> _pages;
     private bool _changed;
     public int PageSize { get; }
@@ -15,12 +16,12 @@ public sealed class PagedTextBuffer
     public int Length { get; private set; }
     public string Value => _changed ? string.Concat(_pages) : _original;
 
-    public PagedTextBuffer(string value, int maximumLength = 200000, int pageSize = DefaultPageSize)
+    public PagedTextBuffer(string value, int maximumLength = 200000, int pageSize = DefaultPageSize, TextFieldKind? inputKind = null)
     {
         ArgumentNullException.ThrowIfNull(value);
         if (pageSize < 2) throw new ArgumentOutOfRangeException(nameof(pageSize));
         if (maximumLength < value.Length) throw new ArgumentOutOfRangeException(nameof(maximumLength));
-        PageSize = pageSize; MaximumLength = maximumLength; _original = value;
+        PageSize = pageSize; MaximumLength = maximumLength; _original = value; _inputKind = inputKind;
         _pages = Split(value).ToList(); Length = value.Length;
     }
 
@@ -91,6 +92,15 @@ public sealed class PagedTextBuffer
         return (value.ToString(), offsets.ToArray());
     }
 
+    public bool CanReplacePage(int index, string text)
+    {
+        if (Length - _pages[index].Length + text.Length > MaximumLength) return false;
+        if (_inputKind is not { } kind) return true;
+        var proposed = string.Concat(_pages.Take(index)) + text + string.Concat(_pages.Skip(index + 1));
+        return string.Equals(proposed, _original, StringComparison.Ordinal)
+            || TextRules.CanAcceptInput(Value, proposed, kind, MaximumLength);
+    }
+
     public void ReplacePage(int index, string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -98,6 +108,8 @@ public sealed class PagedTextBuffer
         if (string.Equals(previous, text, StringComparison.Ordinal)) return;
         var length = Length - previous.Length + text.Length;
         if (length > MaximumLength) throw new ArgumentException($"全文不能超过 {MaximumLength:N0} 个文本单位。", nameof(text));
+        if (!CanReplacePage(index, text))
+            throw new ArgumentException($"全文最多 {TextRules.GetLimit(_inputKind!.Value)} 个字符，超出内容未输入。", nameof(text));
         var replacements = Split(text).ToArray();
         _pages.RemoveAt(index); _pages.InsertRange(index, replacements);
         RepairBoundaries();

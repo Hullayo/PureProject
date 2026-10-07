@@ -25,16 +25,7 @@ public sealed partial class MainWindow
         var form = Column(12); form.MaxWidth = 378; form.HorizontalAlignment = HorizontalAlignment.Stretch;
         form.Children.Add(error); form.Children.Add(name); form.Children.Add(descriptionEditor.Panel);
         var nameHint = EditorText("", 11, "MutedTextBrush"); form.Children.Insert(2, nameHint);
-        void UpdateNameHint()
-        {
-            var unchanged = string.Equals(nameValue(), existing?.Name, StringComparison.Ordinal);
-            var count = TextRules.CountGraphemes(unchanged ? name.Text : name.Text.Trim());
-            nameHint.Text = unchanged && count > TextRules.ProjectNameGraphemeLimit
-                ? $"当前 {count} 字 · 原长名称可保留；修改后最多 {TextRules.ProjectNameGraphemeLimit} 个可见字符。"
-                : $"{count} / {TextRules.ProjectNameGraphemeLimit} 个可见字符";
-            nameHint.Foreground = ThemeBrush(!unchanged && count > TextRules.ProjectNameGraphemeLimit ? "DangerTextBrush" : "MutedTextBrush");
-        }
-        name.TextChanged += (_, _) => UpdateNameHint(); UpdateNameHint();
+        ConfigureTextInput(name, TextFieldKind.Title, "项目名称", nameHint, existing?.Name);
         var colors = new[] { ("朱砂", "#a33b32"), ("松绿", "#3e7562"), ("藤黄", "#ad7622"), ("绛红", "#b94a43"), ("烟紫", "#73576f"),
             ("黛青", "#477477"), ("胭脂", "#a85769"), ("竹青", "#6e7f48"), ("赭石", "#a85e37"), ("孔雀青", "#2e6f68") };
         var colorSection = Column(6); colorSection.Children.Add(EditorText(existing is null ? "颜色" : "项目颜色", 12, "SecondaryTextBrush"));
@@ -101,14 +92,16 @@ public sealed partial class MainWindow
             {
                 invalidField = name;
                 var savedName = TextRules.RequireProjectName(nameValue(), existing?.Name);
+                invalidField = description;
+                var savedDescription = TextRules.RequireLongText(descriptionEditor.Value, "项目描述", existing?.Description);
                 invalidField = null;
                 if (!System.Text.RegularExpressions.Regex.IsMatch(selectedColor.Trim(), "^#[0-9a-fA-F]{6}$")) throw new InvalidOperationException("主题色格式应为 # 加六位十六进制字符。");
                 if (start.Date is not null && end.Date < start.Date) { invalidField = end; throw new InvalidOperationException("截止日期不能早于开始日期。"); }
                 string? savedProjectId = null;
                 await CommitAsync(projects =>
                 {
-                    var p = existing is null ? _service.CreateProject(savedName, descriptionEditor.Value, selectedColor.Trim()) : projects.Single(p => p.Id == existing.Id);
-                    p.Name = savedName; p.Description = descriptionEditor.Value; p.Color = selectedColor.Trim();
+                    var p = existing is null ? _service.CreateProject(savedName, savedDescription, selectedColor.Trim()) : projects.Single(p => p.Id == existing.Id);
+                    _service.UpdateProject(p, savedName, savedDescription, selectedColor.Trim());
                     p.StartDate = DateText(start.Date); p.EndDate = DateText(end.Date); p.UpdatedAt = DateTimeOffset.UtcNow.ToString("O");
                     if (existing is null) { p.SortOrder = projects.Count * 1024; projects.Add(p); }
                     savedProjectId = p.Id;
@@ -168,8 +161,8 @@ public sealed partial class MainWindow
         }
         else if (action.SelectedIndex == 1)
         {
-            var name = await PromptAsync("重命名任务组", group.Name);
-            if (name is not null) await ChangeAsync(p.Id, draft => draft.TaskGroups.Single(g => g.Id == group.Id).Name = name);
+            var name = await PromptAsync("重命名任务组", group.Name, value => TextRules.RequireTitle(value, "任务组名称", group.Name));
+            if (name is not null) await ChangeAsync(p.Id, draft => _service.RenameTaskGroup(draft, group.Id, name));
         }
         else if (action.SelectedIndex == 2) await ChangeAsync(p.Id, draft => _service.SetDefaultTaskGroup(draft, group.Id));
         else if (action.SelectedIndex == 3) await ChangeAsync(p.Id, draft => { if (group.Archived) _service.RestoreTaskGroup(draft, group.Id); else _service.ArchiveTaskGroup(draft, group.Id); });
@@ -200,16 +193,7 @@ public sealed partial class MainWindow
         var descriptionEditor = new LongTextEditor(this, "说明", draft.Description, 120);
         var description = descriptionEditor.Input; description.PlaceholderText = "添加任务描述…";
         var titleHint = EditorText("", 11, "MutedTextBrush");
-        void UpdateTitleHint()
-        {
-            var unchanged = string.Equals(titleValue(), originalTask?.Title, StringComparison.Ordinal);
-            var count = TextRules.CountGraphemes(unchanged ? title.Text : title.Text.Trim());
-            titleHint.Text = unchanged && count > TextRules.TaskTitleGraphemeLimit
-                ? $"当前 {count} 字 · 原长标题可保留；修改后最多 {TextRules.TaskTitleGraphemeLimit} 个可见字符。"
-                : $"{count} / {TextRules.TaskTitleGraphemeLimit} 个可见字符";
-            titleHint.Foreground = ThemeBrush(!unchanged && count > TextRules.TaskTitleGraphemeLimit ? "DangerTextBrush" : "MutedTextBrush");
-        }
-        title.TextChanged += (_, _) => UpdateTitleHint(); UpdateTitleHint();
+        ConfigureTextInput(title, TextFieldKind.Title, "任务标题", titleHint, originalTask?.Title);
         var group = new ComboBox { Header = "任务组", ItemsSource = working.TaskGroups.Where(g => !g.Archived || g.Id == draft.TaskGroupId).OrderBy(g => g.SortOrder).ToList(), DisplayMemberPath = "Name", HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetAutomationId(title, "TaskEditorTitle");
         AutomationProperties.SetAutomationId(description, "TaskEditorDescription");
@@ -271,7 +255,9 @@ public sealed partial class MainWindow
         var due = new CalendarDatePicker { Header = "截止日期", Date = ParseDate(draft.DueDate), PlaceholderText = "未设置", HorizontalAlignment = HorizontalAlignment.Stretch };
         var dueTime = new TextBox { Header = "截止时间", Text = draft.DueTime ?? "", PlaceholderText = "HH:mm（留空为 23:59）" };
         var offset = new NumberBox { Header = "开始偏移（自项目创建日起，天）", Value = draft.StartOffset ?? double.NaN, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
-        var tags = new TextBox { Header = "标签", Text = string.Join(", ", draft.Tags), Visibility = Visibility.Collapsed };
+        // Keep exact tag values when another tag changes; commas and whitespace may
+        // belong to a legacy name and must not be parsed through a joined text field.
+        var selectedTags = draft.Tags.ToList();
         var reminder = new TextBox { Header = "提醒时间", Text = DateTimeOffset.TryParse(draft.Reminder, out var reminderDate) ? reminderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : draft.Reminder ?? "", PlaceholderText = "yyyy-MM-dd HH:mm（应用运行时提醒）" };
         var colorChoices = new[] { "#a33b32", "#3e7562", "#ad7622", "#b94a43", "#73576f", "#477477", "#a85769", "#6e7f48", "#a85e37", "#2e6f68" };
         var colorRow = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, MaximumRowsOrColumns = 10, ItemWidth = 25, ItemHeight = 26 };
@@ -294,13 +280,14 @@ public sealed partial class MainWindow
         }
         FillColors();
         var tagChips = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, MaximumRowsOrColumns = 12, ItemWidth = 25, ItemHeight = 30 };
-        var tagInput = new TextBox { PlaceholderText = "添加标签…", MaxLength = 500 };
+        var tagInput = new TextBox { PlaceholderText = "添加标签…" };
+        ConfigureTextInput(tagInput, TextFieldKind.Title, "标签名称");
         void FillTags()
         {
             tagChips.Children.Clear();
-            foreach (var tag in tags.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct())
+            foreach (var tag in selectedTags)
             {
-                var chip = EditorButton(EditorPreview(tag, 32) + " ×", () => { tags.Text = string.Join(", ", tags.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(value => value != tag)); FillTags(); tagInput.Focus(FocusState.Programmatic); return Task.CompletedTask; });
+                var chip = EditorButton(EditorPreview(tag, 32) + " ×", () => { selectedTags.Remove(tag); FillTags(); tagInput.Focus(FocusState.Programmatic); return Task.CompletedTask; });
                 chip.CornerRadius = new CornerRadius(14); chip.Background = ThemeBrush("AccentLightBrush"); chip.Foreground = ThemeBrush("AccentTextBrush"); chip.BorderThickness = new Thickness(0); chip.MinHeight = 24; chip.Padding = new Thickness(8, 3, 8, 3); chip.Margin = new Thickness(0, 0, 6, 4);
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(chip, "移除标签 " + tag); ToolTipService.SetToolTip(chip, tag);
                 VariableSizedWrapGrid.SetColumnSpan(chip, Math.Clamp((int)Math.Ceiling((tag.Sum(character => character > 127 ? 12 : 6) + 32d) / 25), 2, 12));
@@ -309,12 +296,17 @@ public sealed partial class MainWindow
         }
         Task AddTag()
         {
-            if (!string.IsNullOrWhiteSpace(tagInput.Text)) { tags.Text = string.Join(", ", tags.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Append(tagInput.Text.Trim()).Distinct()); tagInput.Text = ""; FillTags(); }
+            if (!string.IsNullOrWhiteSpace(tagInput.Text))
+            {
+                var tag = TextRules.RequireTitle(tagInput.Text, "标签名称");
+                if (!selectedTags.Contains(tag, StringComparer.Ordinal)) selectedTags.Add(tag);
+                tagInput.Text = ""; FillTags();
+            }
             return Task.CompletedTask;
         }
-        tagInput.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter) { args.Handled = true; await AddTag(); } };
+        tagInput.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !IsTextComposing(tagInput)) { args.Handled = true; await GuardAsync(AddTag); } };
         FillTags();
-        var tagPanel = Column(4); tagPanel.Children.Add(tagChips); tagPanel.Children.Add(EditorAddRow(tagInput, EditorButton("+", AddTag, true))); tagPanel.Children.Add(tags);
+        var tagPanel = Column(4); tagPanel.Children.Add(tagChips); tagPanel.Children.Add(EditorAddRow(tagInput, EditorButton("+", AddTag, true)));
         var basic = Column(13);
         basic.Children.Add(title); basic.Children.Add(titleHint); basic.Children.Add(group); basic.Children.Add(status); basic.Children.Add(EditorSection("状态", statusButtons));
         basic.Children.Add(priority); basic.Children.Add(EditorSection("优先级", priorityButtons)); basic.Children.Add(descriptionEditor.Panel);
@@ -336,7 +328,7 @@ public sealed partial class MainWindow
         basic.Children.Add(clearDue); basic.Children.Add(reminder); basic.Children.Add(EditorSection("标签", tagPanel));
 
         var subtasks = Column(2);
-        var subInputEditor = new LongTextEditor(this, "添加子任务", "", 28, compact: true);
+        var subInputEditor = new LongTextEditor(this, "添加子任务", "", 28, compact: true, kind: TextFieldKind.Title);
         var subInput = subInputEditor.Input; subInput.PlaceholderText = "添加子任务…";
         var subtaskFields = new Dictionary<string, TextBox>();
         var subProgress = new ProgressBar { Height = 4, Minimum = 0, Maximum = 1, Foreground = ThemeBrush("AccentBrush"), Background = ThemeBrush("SubtleBackgroundBrush"), HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -363,7 +355,7 @@ public sealed partial class MainWindow
                     {
                         if (editor is null)
                         {
-                            editor = new LongTextEditor(this, "子任务标题", sub.Title, 56);
+                            editor = new LongTextEditor(this, "子任务标题", sub.Title, 56, kind: TextFieldKind.Title);
                             editor.Changed += () => { sub.Title = editor.Value; preview.Text = EditorPreview(sub.Title, 240); };
                             subtaskFields[sub.Id] = editor.Input; host.Children.Add(editor.Panel);
                         }
@@ -376,7 +368,7 @@ public sealed partial class MainWindow
                 }
                 else
                 {
-                    var editor = new LongTextEditor(this, "子任务标题", sub.Title, 28, compact: true);
+                    var editor = new LongTextEditor(this, "子任务标题", sub.Title, 28, compact: true, kind: TextFieldKind.Title);
                     var input = editor.Input; input.FontSize = 12; input.Padding = new Thickness(4);
                     editor.Changed += () => sub.Title = editor.Value;
                     AutomationProperties.SetName(input, "子任务标题"); subtaskFields[sub.Id] = input; text = editor.Panel;
@@ -389,8 +381,8 @@ public sealed partial class MainWindow
         FillSubtasks();
         var subPanel = Column(6); subPanel.Children.Add(EditorAddRow(subProgress, subProgressText)); subPanel.Children.Add(subtasks);
         Task AddSubtask()
-        { if (!string.IsNullOrWhiteSpace(subInputEditor.Value)) { draft.Subtasks.Add(new Subtask { Id = Guid.NewGuid().ToString(), Title = subInputEditor.Value.Trim() }); subInputEditor.Clear(); FillSubtasks(); subInput.Focus(FocusState.Programmatic); } return Task.CompletedTask; }
-        subInput.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !subInput.AcceptsReturn) { args.Handled = true; await AddSubtask(); } };
+        { if (!string.IsNullOrWhiteSpace(subInputEditor.Value)) { draft.Subtasks.Add(new Subtask { Id = Guid.NewGuid().ToString(), Title = TextRules.RequireTitle(subInputEditor.Value, "子任务标题") }); subInputEditor.Clear(); FillSubtasks(); subInput.Focus(FocusState.Programmatic); } return Task.CompletedTask; }
+        subInput.KeyDown += async (_, args) => { if (args.Key == Windows.System.VirtualKey.Enter && !subInput.AcceptsReturn && !IsTextComposing(subInput)) { args.Handled = true; await GuardAsync(AddSubtask); } };
         subPanel.Children.Add(EditorAddRow(subInputEditor.Panel, EditorButton("+", AddSubtask, true)));
 
         var dependencies = Column(4);
@@ -504,11 +496,13 @@ public sealed partial class MainWindow
         var commentInput = commentEditor.Input; commentInput.PlaceholderText = "添加评论…";
         AutomationProperties.SetAutomationId(commentInput, "TaskEditorCommentInput");
         var existingComments = Column(8);
+        var commentFields = new Dictionary<string, TextBox>();
         var commentHeading = EditorText("", 11, "SecondaryTextBrush"); commentHeading.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         void FillComments()
         {
             commentHeading.Text = $"评论 ({draft.Comments.Count})";
             existingComments.Children.Clear();
+            commentFields.Clear();
             if (draft.Comments.Count == 0) existingComments.Children.Add(EditorText("暂无评论。", 12, "MutedTextBrush"));
             foreach (var comment in draft.Comments.ToList())
             {
@@ -522,6 +516,7 @@ public sealed partial class MainWindow
                     if (editor is null)
                     {
                         editor = new LongTextEditor(this, "评论内容", comment.Content, 56);
+                        commentFields[comment.Id] = editor.Input;
                         editor.Changed += () => { comment.Content = editor.Value; preview.Text = EditorPreview(comment.Content); };
                         item.Children.Insert(1, editor.Panel);
                         preview.Visibility = Visibility.Collapsed;
@@ -594,14 +589,41 @@ public sealed partial class MainWindow
             {
                 invalidField = title;
                 var savedTitle = TextRules.RequireTaskTitle(titleValue(), originalTask?.Title);
+                invalidField = description;
+                var savedDescription = TextRules.RequireLongText(descriptionEditor.Value, "任务说明", originalTask?.Description);
+                invalidField = tagInput;
+                var originalTags = originalTask?.Tags.ToHashSet(StringComparer.Ordinal);
+                var savedTags = selectedTags.Select(tag => TextRules.Require(tag, TextFieldKind.Title, "标签名称",
+                    originalTags?.Contains(tag) == true ? tag : null, required: originalTags?.Contains(tag) != true)).ToList();
+                var originalSubtasks = originalTask?.Subtasks.ToLookup(item => item.Id, StringComparer.Ordinal);
+                foreach (var subtask in draft.Subtasks)
+                {
+                    invalidField = subtaskFields.GetValueOrDefault(subtask.Id);
+                    var originals = originalSubtasks?[subtask.Id];
+                    var originalSubtask = originals?.FirstOrDefault(item => string.Equals(item.Title, subtask.Title, StringComparison.Ordinal))
+                        ?? originals?.FirstOrDefault();
+                    subtask.Title = TextRules.RequireTitle(subtask.Title, "子任务标题", originalSubtask?.Title);
+                }
+                var originalComments = originalTask?.Comments.ToLookup(item => item.Id, StringComparer.Ordinal);
+                foreach (var comment in draft.Comments)
+                {
+                    invalidField = commentFields.GetValueOrDefault(comment.Id);
+                    var originals = originalComments?[comment.Id];
+                    var originalComment = originals?.FirstOrDefault(item => string.Equals(item.Content, comment.Content, StringComparison.Ordinal))
+                        ?? originals?.FirstOrDefault();
+                    comment.Content = TextRules.RequireLongText(comment.Content, "评论内容", originalComment?.Content,
+                        required: originalComment is null || comment.Content != originalComment.Content);
+                }
+                invalidField = commentInput;
+                var savedComment = TextRules.RequireLongText(commentEditor.Value, "评论内容");
                 invalidField = null;
                 if (dueTime.Text.Length > 0 && !TimeOnly.TryParseExact(dueTime.Text.Trim(), "HH:mm", out _)) { invalidField = dueTime; throw new InvalidOperationException("截止时间格式应为 HH:mm。"); }
                 if (reminder.Text.Length > 0 && !DateTimeOffset.TryParse(reminder.Text, out _)) { invalidField = reminder; throw new InvalidOperationException("提醒时间格式应为 yyyy-MM-dd HH:mm。"); }
                 if (group.SelectedItem is not TaskGroup selectedGroup || status.SelectedItem is not TaskStatusDefinition selectedStatus) { invalidField = group; throw new InvalidOperationException("请选择任务组与状态。"); }
-                draft.Title = savedTitle; draft.Description = descriptionEditor.Value; draft.TaskGroupId = selectedGroup.Id; draft.StatusId = selectedStatus.Id;
+                draft.Title = savedTitle; draft.Description = savedDescription; draft.TaskGroupId = selectedGroup.Id; draft.StatusId = selectedStatus.Id;
                 draft.Priority = new[] { "high", "medium", "low" }[priority.SelectedIndex]; draft.DueDate = DateText(due.Date); draft.DueTime = string.IsNullOrWhiteSpace(dueTime.Text) ? null : dueTime.Text.Trim();
                 draft.StartOffset = double.IsNaN(offset.Value) ? null : Math.Round(offset.Value);
-                draft.Tags = tags.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().ToList();
+                draft.Tags = savedTags;
                 draft.Reminder = string.IsNullOrWhiteSpace(reminder.Text) ? null : DateTimeOffset.Parse(reminder.Text).ToUniversalTime().ToString("O");
                 draft.Dependencies = dependencyCandidates.Where(candidate => selectedDependencyIds.Contains(candidate.Id)).Select(candidate =>
                 {
@@ -609,7 +631,6 @@ public sealed partial class MainWindow
                     var days = dependencyInputs[candidate.Id].Value;
                     return new Dependency { TaskId = candidate.Id, DayOffset = double.IsNaN(days) ? 0 : Math.Round(days), Extra = previous?.Extra ?? [] };
                 }).ToList();
-                if (draft.Subtasks.FirstOrDefault(s => string.IsNullOrWhiteSpace(s.Title)) is { } emptySubtask) { invalidField = subtaskFields.GetValueOrDefault(emptySubtask.Id); throw new InvalidOperationException("子任务标题不能为空。"); }
                 if (recurrence.IsChecked == true)
                 {
                     if (end.SelectedIndex == 2 && until.Date is null) { invalidField = until; throw new InvalidOperationException("请选择循环截止日期。"); }
@@ -618,7 +639,7 @@ public sealed partial class MainWindow
                 else draft.Recurrence = null;
                 // Append comments once, after successful validation; retain the draft on a failed write.
                 var replacement = PmSerializer.CloneTask(draft);
-                if (!string.IsNullOrWhiteSpace(commentEditor.Value)) replacement.Comments.Add(new TaskComment { Id = Guid.NewGuid().ToString(), Content = commentEditor.Value.Trim(), CreatedAt = DateTimeOffset.UtcNow.ToString("O") });
+                if (!string.IsNullOrWhiteSpace(savedComment)) replacement.Comments.Add(new TaskComment { Id = Guid.NewGuid().ToString(), Content = savedComment.Trim(), CreatedAt = DateTimeOffset.UtcNow.ToString("O") });
                 await ChangeAsync(project.Id, p =>
                 {
                     _service.SaveTask(p, replacement, isNew);
@@ -654,7 +675,9 @@ public sealed partial class MainWindow
         var existing = milestoneId is null ? null : project.Milestones.FirstOrDefault(m => m.Id == milestoneId)
             ?? throw new InvalidOperationException("里程碑已不存在，请刷新后重试。");
         var savedId = existing?.Id ?? Guid.NewGuid().ToString();
-        var title = new TextBox { Header = "里程碑名称", Text = existing?.Title ?? "", MaxLength = 500 };
+        var title = new TextBox { Header = "里程碑名称", Text = existing?.Title ?? "" };
+        var titleValue = PreserveInitialText(title, existing?.Title);
+        ConfigureTextInput(title, TextFieldKind.Title, "里程碑名称", original: existing?.Title);
         var date = new CalendarDatePicker { Header = "目标日期", Date = existing is null ? DateTimeOffset.Now : ParseDate(existing.Date), HorizontalAlignment = HorizontalAlignment.Stretch };
         var descriptionEditor = new LongTextEditor(this, "说明", existing?.Description ?? "", 96);
         var description = descriptionEditor.Input;
@@ -681,15 +704,19 @@ public sealed partial class MainWindow
             validation.Clear();
             try
             {
-                if (string.IsNullOrWhiteSpace(title.Text)) { invalidField = title; throw new InvalidOperationException("请填写里程碑名称。"); }
+                invalidField = title;
+                var savedTitle = TextRules.RequireTitle(titleValue(), "里程碑名称", existing?.Title);
+                invalidField = description;
+                var savedDescription = TextRules.RequireLongText(descriptionEditor.Value, "里程碑说明", existing?.Description);
+                invalidField = null;
                 if (date.Date is null) { invalidField = date; throw new InvalidOperationException("请选择目标日期。"); }
                 if (!System.Text.RegularExpressions.Regex.IsMatch(color.Text.Trim(), "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")) { invalidField = color; throw new InvalidOperationException("标记颜色应为 # 加六位或八位十六进制字符。"); }
                 await ChangeAsync(projectId, p =>
                 {
                     var milestone = existing is null ? new Milestone { Id = savedId }
                         : p.Milestones.FirstOrDefault(m => m.Id == savedId) ?? throw new InvalidOperationException("里程碑已不存在，请刷新后重试。");
-                    milestone.Title = title.Text.Trim(); milestone.Date = DateText(date.Date)!;
-                    milestone.Description = descriptionEditor.Value; milestone.Color = color.Text.Trim();
+                    milestone.Title = savedTitle; milestone.Date = DateText(date.Date)!;
+                    milestone.Description = savedDescription; milestone.Color = color.Text.Trim();
                     if (existing is null) p.Milestones.Add(milestone);
                 });
             }

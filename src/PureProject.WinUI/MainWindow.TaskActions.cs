@@ -141,7 +141,7 @@ public sealed partial class MainWindow
     private async Task RenameTaskAsync(string projectId, string taskId)
     {
         var task = _projects.Single(p => p.Id == projectId).Tasks.Single(t => t.Id == taskId);
-        var title = await PromptAsync("重命名任务", task.Title, value => TextRules.RequireTaskTitle(value, task.Title), 0);
+        var title = await PromptAsync("重命名任务", task.Title, value => TextRules.RequireTaskTitle(value, task.Title));
         if (title is null) return;
         await ChangeAsync(projectId, draft =>
         {

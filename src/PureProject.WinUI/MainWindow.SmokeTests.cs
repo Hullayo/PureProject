@@ -63,6 +63,9 @@ public sealed partial class MainWindow
                 File.AppendAllText(progressPath, $"{DateTimeOffset.UtcNow:O}\tPASS\t{name}\t{elapsed.Elapsed.TotalMilliseconds:F1} ms{Environment.NewLine}");
             }
 
+            await Step("Enforce native text controls at 64/1024/20 characters", () => RunTextInputLimitChecksAsync(directory));
+            if (Environment.GetEnvironmentVariable("PUREPROJECT_UI_TEXT_LIMIT_ONLY") == "1") return;
+
             var projectId = "";
             var primaryGroupId = "";
             var secondaryGroupId = "";
@@ -970,7 +973,8 @@ public sealed partial class MainWindow
                 {
                     var result = new
                     {
-                        success = failure is null, scope = Environment.GetEnvironmentVariable("PUREPROJECT_UI_CONSISTENCY_ONLY") == "1" ? "component-diagnostic" : "full-regression",
+                        success = failure is null, scope = Environment.GetEnvironmentVariable("PUREPROJECT_UI_TEXT_LIMIT_ONLY") == "1" ? "text-input-limits"
+                            : Environment.GetEnvironmentVariable("PUREPROJECT_UI_CONSISTENCY_ONLY") == "1" ? "component-diagnostic" : "full-regression",
                         startedAt = started, finishedAt = DateTimeOffset.UtcNow,
                         failedStep = failure is null ? null : currentStep, exception = failure, failureScreenshotError,
                         dataDirectory = directory, interaction = "In-process WinUI controls and native ButtonAutomationPeer/IInvokeProvider",

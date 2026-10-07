@@ -434,11 +434,12 @@ public sealed partial class MainWindow : Window
     }
     private async Task<bool> ConfirmAsync(string title, string message) => await DialogAsync(new ContentDialog
     { Title = title, Content = Label(message, true), PrimaryButtonText = "确认", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close }) == ContentDialogResult.Primary;
-    private async Task<string?> PromptAsync(string title, string value = "", Func<string, string>? validate = null, int maximumLength = 500)
+    private async Task<string?> PromptAsync(string title, string value = "", Func<string, string>? validate = null, TextFieldKind kind = TextFieldKind.Title)
     {
-        var input = new TextBox { Header = "名称", MinWidth = 360, MaxLength = maximumLength,
+        var input = new TextBox { Header = "名称", MinWidth = 360,
             AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 144, Text = value };
         var inputValue = PreserveInitialText(input, value);
+        ConfigureTextInput(input, kind, kind == TextFieldKind.Status ? "状态名称" : "名称", original: value);
         var error = new InfoBar { Severity = InfoBarSeverity.Error, IsOpen = false, Visibility = Visibility.Collapsed };
         var content = Column(8); content.Children.Add(input); content.Children.Add(error);
         var validation = new EditorValidation(error);
@@ -448,7 +449,11 @@ public sealed partial class MainWindow : Window
         dialog.Opened += (_, _) => input.Focus(FocusState.Programmatic);
         dialog.PrimaryButtonClick += (_, args) =>
         {
-            try { validated = validate is null ? input.Text.Trim() : validate(inputValue()); validation.Clear(); }
+            try
+            {
+                var candidate = TextRules.Require(inputValue(), kind, kind == TextFieldKind.Status ? "状态名称" : "名称", value);
+                validated = validate is null ? candidate : validate(candidate); validation.Clear();
+            }
             catch (Exception ex) { args.Cancel = true; validation.Show(ex.Message, input); }
         };
         return await DialogAsync(dialog) == ContentDialogResult.Primary ? validated : null;

@@ -36,6 +36,37 @@ internal static class PagedTextTests
             buffer.InsertPage(buffer.Count);
             Check(buffer.Value == before, "Inserting blank page after edits changed text");
         }));
+        tests.Add(("Field limits apply across editing pages without truncating a rejected paste or blocking legacy shortening", () =>
+        {
+            foreach (var (kind, limit) in new[] { (TextFieldKind.Title, 64), (TextFieldKind.LongText, 1024) })
+            {
+                var original = string.Concat(Enumerable.Repeat("👩‍💻", limit - 1));
+                var buffer = new PagedTextBuffer(original, pageSize: 17, inputKind: kind);
+                Check(buffer.Count > 1, "Test text did not span multiple pages");
+                var last = buffer.Count - 1; var filledPage = buffer.GetPage(last) + "e\u0301";
+                Check(buffer.CanReplacePage(last, filledPage), "Exact full-field grapheme limit rejected across pages");
+                buffer.ReplacePage(last, filledPage);
+                Check(buffer.Value == original + "e\u0301" && TextRules.CountGraphemes(buffer.Value) == limit, "Cross-page edit lost graphemes");
+                var before = buffer.Value; var beforePages = Pages(buffer); last = buffer.Count - 1;
+                var displayed = buffer.GetPage(last);
+                Check(!buffer.CanReplacePage(last, displayed + "中"), "Each page received a separate input allowance");
+                try { buffer.PasteIntoDisplayedPage(last, displayed, displayed.Length, 0, "中"); throw new Exception("Oversized paste accepted"); }
+                catch (ArgumentException) { }
+                Check(buffer.Value == before && Pages(buffer).SequenceEqual(beforePages), "Rejected paste changed full text or editing pages");
+                CheckPages(buffer);
+
+                var legacy = new string('旧', limit + 3);
+                buffer = new PagedTextBuffer(legacy, pageSize: 16, inputKind: kind);
+                last = buffer.Count - 1;
+                buffer.ReplacePage(last, buffer.GetPage(last)[..^1]);
+                Check(buffer.Value == legacy[..^1], "Legacy text could not be shortened incrementally");
+                try { TextRules.Require(buffer.Value, kind, "测试字段", legacy); throw new Exception("Still-oversized legacy edit saved"); }
+                catch (ArgumentException) { }
+                buffer.ReplacePage(last, "");
+                Check(buffer.Value == legacy[..limit], "Shortening legacy text changed other pages");
+                Check(TextRules.Require(buffer.Value, kind, "测试字段", legacy) == legacy[..limit], "Shortened legacy text could not be saved");
+            }
+        }));
         tests.Add(("History retention weight includes long descriptions, comments and unknown extension payloads", () =>
         {
             var service = new ProjectService(); var project = service.CreateProject("memory weight");
