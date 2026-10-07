@@ -1,26 +1,26 @@
-# 简项候选包的冻结与打包
+# PureProject 候选包的冻结与打包
 
-`package-release.ps1` 只负责把已经验证并冻结的 WinUI 发布目录封装为候选包。它不会编译、启动 GUI 或执行容量验收；性能与功能结论以 `STRESS_REMEDIATION_20261006.md` 和 `SUPPORT_MATRIX.md` 为准。脚本可在 Windows PowerShell 5.1 或 PowerShell 7 中运行，需要 Git。
+`package-release.ps1` 将已经验证并冻结的 PureProject 发布目录封装为候选包。它不会编译、启动 GUI 或执行容量验收；性能与功能结论以 [发布验证记录](STRESS_REMEDIATION_20261006.md) 和 [支持边界](SUPPORT_MATRIX.md) 为准。脚本可在 Windows PowerShell 5.1 或 PowerShell 7 中运行，需要 Git。
 
 GitHub Actions 会构建、执行控制台回归并验证发布目录所需文件，但只上传验证日志和文件哈希清单，不上传应用二进制。CI 绿色结果不能绕过原生界面或性能阻断；可下载候选必须另行通过本文打包流程。清单、原始压测日志和本机 `artifacts/` 不随源码 checkout 分发，示例中的路径须替换为本次构建实际保存的位置。
 
-构建使用已经提交的 SVG、图标和字体，不运行资源再生成脚本。`src/PureProject.WinUI/Assets/Icons/Generate.ps1` 是可选的历史提取工具，本仓库未附原 ProjectManager 的 `v1.2` 组件。只有重新提取图标时才需要另备原始 `Icon.svelte` / `Sidebar.svelte`，并使用必填参数 `-Source` / `-SidebarSource` 指定文件；脚本不查找相邻旧仓库。普通构建和测试不依赖它们。Core、Exchange 和 Infrastructure 的运行样本已随各测试工程的 `Fixtures` 提交。
+构建使用已经提交的 SVG、图标和字体，不运行资源再生成脚本。`src/PureProject.WinUI/Assets/Icons/Generate.ps1` 是可选的图标提取工具。只有重新生成图标时，才需要准备包含图标定义的 `Icon.svelte` / `Sidebar.svelte` 源文件，并通过必填参数 `-Source` / `-SidebarSource` 指定路径；普通构建和测试不依赖这些输入文件。Core、Exchange 和 Infrastructure 的运行样本已随各测试工程的 `Fixtures` 提交。
 
 ## 输入与版本
 
-以下命令在简项独立仓库根目录执行。版本从 `src/PureProject.WinUI/PureProject.WinUI.csproj` 读取。打包必须显式提供生产冻结清单和完整源码提交，不接受空提交或仅凭当前 HEAD 猜测来源。`-SourceRepository` 默认指向脚本所在的独立仓库根目录；只有使用另一份简项 checkout 核验时才需要覆盖。
+以下命令在 PureProject 仓库根目录执行。版本从 `src/PureProject.WinUI/PureProject.WinUI.csproj` 读取，当前版本为 **2.0.1**。打包必须显式提供生产冻结清单和完整源码提交，不接受空提交或仅凭当前 HEAD 猜测来源。`-SourceRepository` 默认指向脚本所在的仓库根目录；使用另一份 PureProject checkout 核验时可覆盖该路径。
 
 ```powershell
 .\package-release.ps1 `
   -PublishDirectory 'C:\build\PureProject\publish' `
   -OutputDirectory 'C:\build\PureProject\release-candidate-01' `
   -FreezeManifest 'C:\build\PureProject\production-freeze-final.json' `
-  -SourceRepository 'C:\src\jianxiang' `
+  -SourceRepository 'C:\src\PureProject' `
   -SourceCommit '<与冻结源码完全一致的完整 Git commit SHA>' `
   -ValidateOnly
 ```
 
-`-ValidateOnly` 通过后，移除该开关，用同一组输入执行打包。输出目录必须尚不存在；脚本不会覆盖旧包。生产发布目录、输出目录和冻结清单应相互独立，输出目录不能位于发布目录内。打包脚本所在的 `src`、独立仓库源码提交中的 `src`、冻结清单的源码哈希必须完全一致。旧混合仓库中仅有 `winui/src` 的提交不能直接作为新目录的打包来源。
+`-ValidateOnly` 通过后，移除该开关，用同一组输入执行打包。输出目录必须尚不存在；脚本不会覆盖已有包。生产发布目录、输出目录和冻结清单应相互独立，输出目录不能位于发布目录内。打包脚本所在的 `src`、指定源码提交中的 `src`、冻结清单的源码哈希必须完全一致。
 
 冻结清单的必要结构如下。`sourceFiles` 的路径相对于 `src`，`binaries` 的路径相对于发布目录；路径使用 `/`，SHA-256 为 64 位十六进制字符串。下面只示意结构，实际清单须包含全部文件。
 
@@ -39,7 +39,7 @@ GitHub Actions 会构建、执行控制台回归并验证发布目录所需文�
 }
 ```
 
-应在生产编译、必要的原生界面验收完成后生成最终清单，并保留构建日志、测试证据、稳定的源码清单副本。源码有变化时，须重新构建和冻结；不能用更新后的源码清单与旧二进制并列充当同一构建的证明。清单哈希和 Git 对照建立文件来源链，不能替代编译器证明或运行验收。
+应在生产编译、必要的原生界面验收完成后生成最终清单，并保留构建日志、测试证据、稳定的源码清单副本。源码有变化时，须重新构建和冻结；不能用更新后的源码清单与其他构建的二进制并列充当同一构建的证明。清单哈希和 Git 对照建立文件来源链，不能替代编译器证明或运行验收。
 
 ## 门禁与输出
 

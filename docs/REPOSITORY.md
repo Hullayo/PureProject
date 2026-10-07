@@ -1,48 +1,75 @@
-# 简项独立仓库说明
+# PureProject 开发指南
 
-拆分日期：2026-10-07。
+PureProject（简项）使用 C#、.NET 10 和 WinUI 3 开发，当前应用版本为 **2.0.1**。源码、测试、构建脚本和发布工具均位于 [Hullayo/PureProject](https://github.com/Hullayo/PureProject) 仓库。
 
-简项 PureProject 2.0.1 Windows 原生客户端现在由 `jianxiang` 独立目录维护。该目录拥有自己的 `.git`、解决方案、构建入口和 Windows CI。远程 `origin` 为 [Hullayo/PureProject](https://github.com/Hullayo/PureProject)，Git 地址为 `https://github.com/Hullayo/PureProject.git`。`main` 维护 WinUI 原生版，`legacy/tauri-v1.2` 保留该远程原有的 Tauri 版本。
+## 获取源码
 
-## 目录对应
-
-| 用途 | 本机位置 |
-|---|---|
-| 简项当前开发仓库 | `C:\Users\34890\Desktop\jianxiang` |
-| 旧版 ProjectManager 工程 | `C:\Users\34890\Desktop\porjectmanagement` |
-| 原简项源码副本 | 旧工程的 `winui/`，仅保留作为拆分时参考 |
-| 旧 ProjectManager 发布副本 | 旧工程的 `github-publish/` |
-| 墨渡及历史简项混合发布副本 | 旧工程的 `github-publish-modu/` |
-
-后续简项变更在新仓库进行。旧工程及其 Git 发布副本未移动或删除；旧版 Tauri、历史版本、用户数据与压测原始记录仍保留在原处。
-
-## 来源与范围
-
-迁入文件来自旧工程 `winui/`。拆分前核对了历史发布仓库跟踪的 240 个 WinUI 文件，全部与本机文件字节一致。对应历史仓库为 `https://github.com/Hullayo/ModuForKindle.git`，提交为 `dcd5f03e4256f15e6cfb6c7e22897a1141e9f822`。
-
-新仓库从这个已核对的源码快照建立独立提交；不复制混合仓库的 Git 历史、远程地址或墨渡代码。WinUI 子目录平铺至仓库根目录，另迁入简项自己的 CI 并调整路径。
-
-本次调整包括 README、构建与测试操作路径、候选包的 Git 源码校验路径、CI 的运行根目录，以及将历史图标提取器的外部输入改为显式参数。应用名称、程序集、用户数据路径、业务实现和兼容性契约沿用现有简项原生版。
-
-许可证与固定测试样本随源码保存。旧 CI、PR 和性能报告链接保持原始地址，作为历史证据，不代表当前仓库的 CI 或发布结果。
-
-## 本机构建环境
-
-本机目录包含独立复制的 .NET SDK 10.0.401、NuGet 包和离线包源，均被 Git 忽略，没有指向旧目录的符号链接。将整个目录放在上述独立位置后，可执行：
+在 Windows x64 环境中安装 Git，然后克隆仓库：
 
 ```powershell
-Set-Location C:\Users\34890\Desktop\jianxiang
-.\build.ps1 -Task Restore -Offline
-.\build.ps1 -Task Publish -Configuration Release -Offline
-.\build.ps1 -Task Test -Configuration Release -Offline
+git clone https://github.com/Hullayo/PureProject.git
+Set-Location PureProject
 ```
 
-从新的 Git checkout 开始时，按 README 先在线 Restore。源码本身不需要旧工程、Node.js 或 Rust；可选 REST 集成测试单独需要 Node.js。
+应用支持 Windows 10 2004（19041）及更新版本，推荐 Windows 11。建议选择较短的本地检出路径，避免 Windows 构建工具遇到路径长度限制。
 
-本次构建与测试的详细记录保存在本机 `artifacts/repository-validation/`。实际验证结果记录于 [独立仓库验证](REPOSITORY_VALIDATION.md)。日常启动双击根目录 `run.cmd`，默认使用本仓库发布输出。
+## 仓库结构
 
-## 远程分支安排（2026-10-07）
+| 路径 | 用途 |
+|---|---|
+| `PureProject.sln` | 解决方案入口 |
+| `src/PureProject.Core/` | 项目与任务模型、业务规则、输入校验 |
+| `src/PureProject.Infrastructure/` | 本地存储、数据交换与同步 |
+| `src/PureProject.WinUI/` | Windows 客户端、界面与应用资源 |
+| `tests/` | Core、Storage、Infrastructure、Exchange 四组控制台自检及固定样本 |
+| `tools/ScaleFixture/` | 合成规模数据工具 |
+| `docs/` | 开发、支持边界、打包和验证文档 |
+| `.github/workflows/winui.yml` | Windows CI |
+| `build.ps1` / `run.cmd` | 本地构建与启动入口 |
+| `package-release.ps1` | 校验冻结目录并生成候选发布包 |
 
-用户指定使用 Hullayo/PureProject，并确认 main 改为简项原生版。该远程原 main 的 Tauri 提交 99f801f61e9a0a26e304419ef05bb8b167fa3f2b 保存为 legacy/tauri-v1.2 分支。原生版 main 合并该旧提交作为历史父节点，保留原生版文件树，通过普通快进推送接续远程历史；未强制推送或删除旧提交。
+`.tools/`、`.nuget/`、`.dotnet-home/`、`artifacts/`、`bin/` 和 `obj/` 是本机生成内容，不提交到 Git。
 
-拆分来源章节描述最初的本地快照来源。接入新远程后，旧 Tauri 提交也保留在 main 的祖先历史中，但旧版文件只在历史分支或对应提交中检出，当前文件树专门维护原生版。
+## SDK 与构建
+
+仓库固定使用 .NET SDK **10.0.401**、Windows App SDK **1.8.260921001**。首次执行 `build.ps1` 时会下载并校验便携 .NET SDK，SDK、NuGet 依赖和缓存保存在仓库目录内。
+
+在仓库根目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Task Restore
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Task Build -Configuration Release
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Task Test -Configuration Release
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Task Publish -Configuration Release
+```
+
+默认发布目录为 `artifacts/publish/win-x64-2.0.1`。需要保留多个构建时，通过 `-PublishDirectory <输出目录>` 指定独立目录。
+
+SDK、NuGet 缓存与 `.tools/nuget-feed` 齐备后，可在上述命令中加入 `-Offline`。新克隆的仓库应先在线恢复依赖。应用构建和运行不需要 Node.js；可选 REST 集成测试需要 Node.js，CI 使用 Node.js 22。
+
+## 运行与数据隔离
+
+在仓库根目录双击 `run.cmd`，启动脚本会优先使用默认发布目录中的程序。也可以通过 `build.ps1 -Task Run -Configuration Release` 构建并启动，或直接运行发布目录中的 `PureProject.exe`。
+
+发布目录包含 .NET、WinUI 运行时和应用资源，分发时须保留整个目录。
+
+默认数据目录为 `%LOCALAPPDATA%\PureProject\WinUI\`。进行手工回归或调试时，可在启动前设置 `PUREPROJECT_DATA_DIR`，将测试数据写入独立目录：
+
+```powershell
+$env:PUREPROJECT_DATA_DIR = Join-Path (Get-Location) 'artifacts/manual-test-data'
+.\build.ps1 -Task Run -Configuration Release
+```
+
+## 测试与 CI
+
+测试工程使用控制台自检，由 `build.ps1 -Task Test` 运行，不使用 `dotnet test`。Storage 默认包含 100,000 任务的合成规模用例；Infrastructure 的 DPAPI 测试需要正常 Windows 用户上下文。固定样本随相应测试工程提交，详见各测试工程 README。
+
+GitHub Actions 执行构建、控制台回归、REST 集成测试与发布文件检查，并上传日志和文件哈希清单。CI 不分发应用二进制，也不替代原生界面、输入法、外部软件交互或长稳验收。
+
+候选包的生成要求见 [冻结与打包](PACKAGING.md)，容量与验证范围见 [支持边界](SUPPORT_MATRIX.md)。
+
+## 贡献代码
+
+从 `main` 创建工作分支，围绕具体问题提交变更。涉及行为调整时补充相应的控制台回归或界面验证，并在 Pull Request 中说明问题、预期行为和实际验证结果。
+
+请保留许可证、字体许可和固定测试样本。涉及存储、交换或同步契约的变更，应同步检查已有数据的读取与还原，并更新对应文档。构建产物、用户数据和同步凭据不纳入提交。

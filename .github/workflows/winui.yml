@@ -1,4 +1,4 @@
-name: Jianxiang WinUI validation
+name: PureProject Windows validation
 on:
   workflow_dispatch:
   push:
