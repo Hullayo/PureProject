@@ -113,6 +113,8 @@ try
             "a restored older server cannot silently roll back local data");
     }
 
+    passed += await SettingsBackupTests.RunAsync(original, testRoot);
+    passed += ShortcutSettingsTests.Run();
     Console.WriteLine($"Infrastructure: {passed} checks passed.");
     if (args.Contains("--integration", StringComparer.Ordinal))
         await ServerIntegration.RunAsync();

@@ -67,7 +67,7 @@ public sealed partial class MainWindow
             NativeControlPalette.SetIsEnabled(localCopy, true);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(localCopy, "当前会保存应用内部数据；额外文件夹副本功能尚未迁移。");
             storage.Children.Add(new Border { Child = localCopy, Background = ThemeBrush("SubtleBackgroundBrush"), Padding = new Thickness(6, 0, 6, 0), CornerRadius = new CornerRadius(4) });
-            storage.Children.Add(EditorText("云同步地址和凭据在设置中管理。", 10, "MutedTextBrush"));
+            storage.Children.Add(EditorText("自动备份与数据恢复可在设置中管理。", 10, "MutedTextBrush"));
             var storageSection = Column(6); storageSection.Children.Add(EditorText("存储位置", 12, "SecondaryTextBrush"));
             storageSection.Children.Add(new Border { Child = storage, Padding = new Thickness(8), BorderThickness = new Thickness(1), BorderBrush = ThemeBrush("BorderBrush"), Background = ThemeBrush("CardBackgroundBrush"), CornerRadius = new CornerRadius(4) });
             form.Children.Add(storageSection);

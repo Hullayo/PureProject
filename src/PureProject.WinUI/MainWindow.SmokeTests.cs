@@ -100,6 +100,21 @@ public sealed partial class MainWindow
                 SmokeAssert(_projects.Single().Tasks.Count == 3 && File.Exists(repository.DataFilePath), "The first commit was not persisted.");
             });
 
+            if (Environment.GetEnvironmentVariable("PUREPROJECT_UI_SETTINGS_ONLY") == "1")
+            {
+                foreach (var theme in new[] { "Light", "Dark" })
+                {
+                    _settings = _settings with { Theme = theme }; ApplyTheme(); Render(); await SmokeLayoutAsync();
+                    await Step("Inspect and capture all five Settings pages in " + theme,
+                        () => SmokeSettingsPagesAsync(directory, theme, screenshots));
+                }
+                await Step("Persist automatic-backup controls and disable their interval", SmokeSettingsBackupAsync);
+                await Step("Customize, validate and restore keyboard shortcuts", SmokeSettingsShortcutsAsync);
+                await Step("Cancel export and return to the original Settings data page", SmokeSettingsExportReturnAsync);
+                await Step("Persist and apply all three themes through Settings", SmokeSettingsThemesAsync);
+                return;
+            }
+
             await Step("Load the bundled Harmony font and bind visible application text to it", async () =>
             {
                 var fontPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "HarmonyOS_Sans_SC.ttf");
@@ -598,21 +613,8 @@ public sealed partial class MainWindow
                     SmokeInvoke(SmokeHeaderCloseButton(dialog));
                     await SmokeAwaitDialogAsync(editing, dialog);
                 });
-                await Step($"Open and capture Settings in {theme}", async () =>
-                {
-                    var showing = ShowSettingsAsync();
-                    var dialog = await SmokeWaitForDialogAsync(showing);
-                    SmokeAssert(Equals(dialog.Tag, "Settings"), "Settings did not open its dedicated dialog template.");
-                    SmokeAssert(SmokeDescendants<Grid>(dialog).Any(grid => grid.ColumnDefinitions.Count == 2 && Math.Abs(grid.ColumnDefinitions[0].Width.Value - 140) < .5), "Settings is missing the 140-DIP navigation column.");
-                    screenshots.Add(await SmokeCaptureAsync(directory, $"settings-{theme.ToLowerInvariant()}.png", dialog));
-                    SmokeInvoke(SmokeFind<Button>(dialog, button => Equals(button.Content, "数据管理")));
-                    await SmokeLayoutAsync();
-                    await SmokeInputChromeAsync(SmokeFind<TextBox>(dialog, field => Equals(field.Header, "同步服务器地址")), SmokeHeaderCloseButton(dialog));
-                    await SmokeInputChromeAsync(SmokeFind<PasswordBox>(dialog, field => Equals(field.Header, "访问令牌")), SmokeHeaderCloseButton(dialog));
-                    screenshots.Add(await SmokeCaptureAsync(directory, $"settings-inputs-{theme.ToLowerInvariant()}.png", dialog));
-                    SmokeInvoke(SmokeHeaderCloseButton(dialog));
-                    await SmokeAwaitDialogAsync(showing, dialog);
-                });
+                await Step($"Inspect and capture all five Settings pages in {theme}",
+                    () => SmokeSettingsPagesAsync(directory, theme, screenshots));
                 await Step($"Capture new project editor, validate its required name and close without saving in {theme}", async () =>
                 {
                     var countBefore = _projects.Count;
@@ -726,39 +728,9 @@ public sealed partial class MainWindow
                 SmokeAssert(_projects.Single().Tasks.Count == 4, "The temporary quick-add regression fixture was not removed.");
             });
 
-            await Step("Cancel the application export dialog and retain the Settings data-page drafts", async () =>
-            {
-                var settingsRepository = _settingsRepository ?? throw new InvalidOperationException("The settings repository is unavailable.");
-                var existed = File.Exists(settingsRepository.FilePath);
-                var before = existed ? await File.ReadAllTextAsync(settingsRepository.FilePath) : null;
-                var storedUrl = _settings.SyncServerUrl; var storedToken = _settings.SyncToken;
-                var showing = ShowSettingsAsync();
-                var original = await SmokeWaitForDialogAsync(showing);
-                SmokeInvoke(SmokeFind<Button>(original, button => AutomationProperties.GetAutomationId(button) == "SettingsPage_data"));
-                await SmokeLayoutAsync();
-                var url = SmokeFind<TextBox>(original, field => AutomationProperties.GetAutomationId(field) == "SettingsSyncUrl");
-                var token = SmokeFind<PasswordBox>(original, field => AutomationProperties.GetAutomationId(field) == "SettingsSyncToken");
-                url.Text = "https://smoke-draft.invalid"; token.Password = "smoke-unsaved-token";
-                SmokeInvoke(SmokeFind<Button>(original, button => AutomationProperties.GetAutomationId(button) == "SettingsExport"));
-                var export = await SmokeWaitForDialogAsync(showing, original);
-                SmokeAssert(Equals(export.Title, "备份与导出"), "Settings Export did not open the application's export-options dialog.");
-                var format = SmokeFind<ComboBox>(export, control => AutomationProperties.GetAutomationId(control) == "ExportFormat");
-                SmokeAssert(format.Items.Count == 3 && format.Items[0].ToString()!.Contains(".pureproject")
-                    && format.Items[1].ToString()!.Contains(".mm") && format.Items[2].ToString()!.Contains(".xlsx"), "Three lossless exchange formats are not available.");
-                format.SelectedIndex = 2; await SmokeLayoutAsync();
-                SmokeAssert(SmokeDescendants<TextBlock>(export).Any(text => text.Text.Contains("分组标题合并")), "Excel editing/restore guidance is missing.");
-                // Stop at the application's cancel action. This scenario never opens
-                // or claims coverage of the operating-system import/save pickers.
-                SmokeInvoke(SmokeDialogButton(export, "CloseButton", "取消"));
-                var returned = await SmokeWaitForDialogAsync(showing, export);
-                SmokeAssert(ReferenceEquals(returned, original) && url.Text == "https://smoke-draft.invalid" && token.Password == "smoke-unsaved-token",
-                    "Cancelling export recreated Settings or discarded its connection drafts.");
-                SmokeAssert(AutomationProperties.GetItemStatus(SmokeFind<Button>(returned, button => AutomationProperties.GetAutomationId(button) == "SettingsPage_data")) == "已选中"
-                    && SmokeRenderedVisible(url, returned) && SmokeRenderedVisible(token, returned), "Cancelling export did not return to the Settings data page.");
-                SmokeInvoke(SmokeHeaderCloseButton(returned)); await SmokeAwaitDialogAsync(showing, returned);
-                SmokeAssert(_settings.SyncServerUrl == storedUrl && _settings.SyncToken == storedToken && File.Exists(settingsRepository.FilePath) == existed
-                    && (!existed || await File.ReadAllTextAsync(settingsRepository.FilePath) == before), "Closing the returned Settings draft persisted unsaved connection values.");
-            });
+            await Step("Persist automatic-backup controls and disable their interval", SmokeSettingsBackupAsync);
+            await Step("Customize, validate and restore keyboard shortcuts", SmokeSettingsShortcutsAsync);
+            await Step("Cancel export and return to the original Settings data page", SmokeSettingsExportReturnAsync);
 
             await Step("Cancel background transfers through both footer and header close buttons", async () =>
             {
@@ -780,24 +752,7 @@ public sealed partial class MainWindow
                 SmokeAssert(fast == "completed" && !_busy && !_dialogOpen, "A quickly completed transfer left a dialog or busy state behind.");
             });
 
-            await Step("Persist and apply Light and Dark themes through visible Settings buttons", async () =>
-            {
-                var settingsRepository = _settingsRepository ?? throw new InvalidOperationException("The settings repository is unavailable.");
-                var showing = ShowSettingsAsync();
-                var dialog = await SmokeWaitForDialogAsync(showing);
-                foreach (var (label, theme, expected) in new[] { ("浅色", "Light", ElementTheme.Light), ("深色", "Dark", ElementTheme.Dark) })
-                {
-                    var button = SmokeFind<Button>(dialog, item => item.IsEnabled && Equals(item.Content, label));
-                    SmokeInvoke(button);
-                    dialog = await SmokeWaitForDialogAsync(showing, dialog);
-                    SmokeAssert(Equals(dialog.Tag, "Settings"), "Theme switch did not reopen Settings.");
-                    SmokeAssert(_settings.Theme == theme && Root.ActualTheme == expected, "The visible Settings theme button did not apply its theme.");
-                    var saved = await settingsRepository.LoadAsync();
-                    SmokeAssert(saved.Theme == theme, "The Settings theme button did not persist its selection immediately.");
-                }
-                SmokeInvoke(SmokeHeaderCloseButton(dialog));
-                await SmokeAwaitDialogAsync(showing, dialog);
-            });
+            await Step("Persist and apply all three themes through Settings", SmokeSettingsThemesAsync);
 
             await Step("Persist Dark theme through SettingsRepository and reload it", async () =>
             {
@@ -974,6 +929,7 @@ public sealed partial class MainWindow
                     var result = new
                     {
                         success = failure is null, scope = Environment.GetEnvironmentVariable("PUREPROJECT_UI_TEXT_LIMIT_ONLY") == "1" ? "text-input-limits"
+                            : Environment.GetEnvironmentVariable("PUREPROJECT_UI_SETTINGS_ONLY") == "1" ? "settings-regression"
                             : Environment.GetEnvironmentVariable("PUREPROJECT_UI_CONSISTENCY_ONLY") == "1" ? "component-diagnostic" : "full-regression",
                         startedAt = started, finishedAt = DateTimeOffset.UtcNow,
                         failedStep = failure is null ? null : currentStep, exception = failure, failureScreenshotError,

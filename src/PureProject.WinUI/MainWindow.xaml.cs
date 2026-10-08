@@ -53,21 +53,8 @@ public sealed partial class MainWindow : Window
         SetTitleBar(TitleBarDragRegion);
         Root.ActualThemeChanged += (_, _) => { _activeDark = Root.ActualTheme == ElementTheme.Dark; if (_ready) Render(); };
         AppWindow.Closing += (_, e) => { if (_busy) { e.Cancel = true; ShowMessage("正在处理数据，请稍后再关闭窗口。"); } };
-        Closed += (_, _) => { _ready = false; _reminderTimer?.Stop(); _repository?.Dispose(); };
-        AddShortcut(VirtualKey.N, async () => { if (Current is null) await EditProjectAsync(); else await EditTaskAsync(null); });
-        AddShortcut(VirtualKey.F, FocusTaskSearchAsync);
-        AddShortcut(VirtualKey.F, ShowGlobalSearchAsync, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift);
-        AddShortcut((VirtualKey)188, ShowSettingsAsync);
-        AddShortcut(VirtualKey.Z, UndoAsync);
-        AddShortcut(VirtualKey.Y, RedoAsync);
-        AddShortcut(VirtualKey.Z, RedoAsync, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift);
-    }
-
-    private void AddShortcut(VirtualKey key, Func<Task> action, VirtualKeyModifiers modifiers = VirtualKeyModifiers.Control)
-    {
-        var shortcut = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
-        shortcut.Invoked += async (_, e) => { if (!_dialogOpen && _ready && !_busy) { e.Handled = true; await GuardAsync(action); } };
-        Root.KeyboardAccelerators.Add(shortcut);
+        Closed += (_, _) => { _ready = false; _reminderTimer?.Stop(); StopAutoBackup(); _repository?.Dispose(); };
+        ConfigureShortcuts();
     }
 
     private async void Root_Loaded(object sender, RoutedEventArgs e)
@@ -90,6 +77,8 @@ public sealed partial class MainWindow : Window
             ApplyTheme();
             _busy = false;
             _ready = true;
+            ConfigureShortcuts();
+            ConfigureAutoBackup();
             Render();
             SetSaveStatus("本地数据已就绪");
             ShowTemporaryRecoveryNotice();
@@ -134,6 +123,8 @@ public sealed partial class MainWindow : Window
                         try { _settings = await _settingsRepository.LoadAsync(); _settingsLoaded = true; ApplyTheme(); }
                         catch (Exception settingsError) { ShowMessage("项目已恢复，但设置无法加载：" + settingsError.Message, InfoBarSeverity.Warning); }
                         _ready = true;
+                        ConfigureShortcuts();
+                        ConfigureAutoBackup();
                         Render();
                         StartReminderTimer();
                         SetSaveStatus("本地备份已恢复");
@@ -420,6 +411,7 @@ public sealed partial class MainWindow : Window
         dialog.XamlRoot = Root.XamlRoot;
         dialog.RequestedTheme = Root.RequestedTheme;
         ConfigureDialogStyle(dialog);
+        ConfigureDialogShortcuts(dialog);
         var drawer = Equals(dialog.Tag, "TaskDetail");
         if (drawer) MainPane.Margin = new Thickness(0, 0, Math.Min(340, Root.ActualWidth - 264), 0);
         _dialogOpen = true;

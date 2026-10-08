@@ -372,12 +372,12 @@ public sealed partial class MainWindow
         scrim.Content = null; scrim.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(90, 0, 0, 0)); scrim.BorderThickness = new Thickness(0); scrim.CornerRadius = new CornerRadius(0);
         scrim.HorizontalAlignment = HorizontalAlignment.Stretch; scrim.VerticalAlignment = VerticalAlignment.Stretch; scrim.Visibility = Visibility.Collapsed;
         Grid.SetColumnSpan(scrim, 2); Canvas.SetZIndex(scrim, 10); layout.Children.Add(scrim); Canvas.SetZIndex(groupBorder, 20);
-        var groupToggle = ViewIcon("\uE700", "选择任务组", () => { drawerOpen = true; groupPanel.TabFocusNavigation = Microsoft.UI.Xaml.Input.KeyboardNavigationMode.Cycle; groupBorder.Visibility = Visibility.Visible; scrim.Visibility = Visibility.Visible; FocusUiElement("KanbanGroup:" + group.Id); return Task.CompletedTask; }, 32); ViewIdentity(groupToggle, "KanbanGroupDrawerToggle", "选择任务组", "展开任务组列表；按 Escape 关闭");
-        ViewIdentity(scrim, "KanbanGroupDrawerClose", "关闭任务组", "按 Escape 关闭任务组面板");
+        var groupToggle = ViewIcon("\uE700", "选择任务组", () => { drawerOpen = true; groupPanel.TabFocusNavigation = Microsoft.UI.Xaml.Input.KeyboardNavigationMode.Cycle; groupBorder.Visibility = Visibility.Visible; scrim.Visibility = Visibility.Visible; FocusUiElement("KanbanGroup:" + group.Id); return Task.CompletedTask; }, 32); ViewIdentity(groupToggle, "KanbanGroupDrawerToggle", "选择任务组", "展开任务组列表；按 " + ShortcutGestureLabel("ClosePanel") + " 关闭");
+        ViewIdentity(scrim, "KanbanGroupDrawerClose", "关闭任务组", "按 " + ShortcutGestureLabel("ClosePanel") + " 关闭任务组面板");
         void HandleDrawerKeys(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs args)
         {
             if (!drawerOpen) return;
-            if (args.Key == Windows.System.VirtualKey.Escape)
+            if (IsClosePanelShortcut(args.Key))
             {
                 CloseGroupDrawer(); args.Handled = true; return;
             }
